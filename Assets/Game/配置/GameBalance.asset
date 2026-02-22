@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 95d68038b389022428525922f166c2eb, type: 3}
+  m_Name: GameBalance
+  m_EditorClassIdentifier: 
+  queueCapacity: 8
+  crowdingThreshold: 6
+  deathThreshold: 8
+  deathDurationSeconds: 20
+  passengerSpawnInterval: 10
+  passengerSpawnCountPerStation: 1
+  weekDurationSeconds: 60
+  shipCapacity: 4
+  carriageCapacityIncrement: 2
+  shipSpeedUnitsPerSecond: 1.5
+  dockDurationSeconds: 1
+  shapeTypeCount: 4
+  lineColorCount: 3

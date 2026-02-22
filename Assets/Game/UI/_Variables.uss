@@ -1,0 +1,4 @@
+/* 共用样式变量 - 可在各界面 USS 中 @import */
+.hidden {
+    display: none;
+}

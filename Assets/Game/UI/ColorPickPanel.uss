@@ -1,0 +1,63 @@
+/* 选色面板 - 连线时选择红/绿/蓝 */
+@import url("_Variables.uss");
+
+.color-pick-root {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.color-pick-blocker {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0);
+}
+
+.color-pick-panel {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    translate: -50% -50%;
+    width: 280px;
+    height: 120px;
+    background-color: rgba(51, 51, 51, 0.95);
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.color-row {
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+}
+
+.color-btn {
+    width: 64px;
+    height: 36px;
+    margin-left: 5px;
+    margin-right: 5px;
+}
+
+.color-btn.red {
+    background-color: rgb(255, 0, 0);
+}
+
+.color-btn.green {
+    background-color: rgb(0, 255, 0);
+}
+
+.color-btn.blue {
+    background-color: rgb(0, 0, 255);
+}
+
+.color-btn.cancel {
+    margin-top: 24px;
+    width: 80px;
+    background-color: rgb(128, 128, 128);
+}

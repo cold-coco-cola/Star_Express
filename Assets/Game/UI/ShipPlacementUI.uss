@@ -1,0 +1,72 @@
+/* 飞船放置 UI - UI Toolkit */
+@import url("_Variables.uss");
+
+.root {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.blocker {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0);
+}
+
+.panel {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    translate: 0 -50%;
+    flex-direction: row;
+    width: 92px;
+    height: 56px;
+    align-items: center;
+}
+
+.circle-button {
+    width: 56px;
+    height: 56px;
+    border-radius: 28px;
+    background-color: rgb(89, 102, 128);
+    margin-right: 4px;
+}
+
+.count-label {
+    width: 32px;
+    height: 39px;
+    font-size: 22px;
+    -unity-text-align: middle-center;
+    color: rgb(255, 255, 255);
+}
+
+.fan-panel {
+    position: absolute;
+    left: 60px;
+    top: 50%;
+    translate: 0 -50%;
+    width: 100px;
+    height: 136px;
+    background-color: rgba(46, 51, 61, 0.95);
+    padding: 6px;
+}
+
+.fan-content {
+    flex-grow: 1;
+    flex-direction: column;
+    margin-top: 4px;
+    margin-bottom: 4px;
+}
+
+.line-button {
+    height: 40px;
+    min-height: 36px;
+    margin-top: 3px;
+    margin-bottom: 3px;
+    -unity-background-scale-mode: stretch-to-fill;
+}

@@ -1,0 +1,14 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <Style src="ColorPickPanel.uss" />
+    <ui:VisualElement name="root" class="color-pick-root hidden">
+        <ui:VisualElement name="blocker" class="color-pick-blocker" picking-mode="Position" />
+        <ui:VisualElement name="panel" class="color-pick-panel">
+            <ui:VisualElement name="color-row" class="color-row">
+                <ui:VisualElement name="btn-red" class="color-btn red" />
+                <ui:VisualElement name="btn-green" class="color-btn green" />
+                <ui:VisualElement name="btn-blue" class="color-btn blue" />
+            </ui:VisualElement>
+            <ui:VisualElement name="btn-cancel" class="color-btn cancel" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

@@ -1,0 +1,13 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <Style src="ShipPlacementUI.uss" />
+    <ui:VisualElement name="root" class="root">
+        <ui:VisualElement name="blocker" class="blocker hidden" picking-mode="Position" />
+        <ui:VisualElement name="panel" class="panel">
+            <ui:VisualElement name="circle-button" class="circle-button" />
+            <ui:Label name="count-label" class="count-label" text="0" />
+            <ui:VisualElement name="fan-panel" class="fan-panel hidden">
+                <ui:ScrollView name="fan-content" class="fan-content" mode="Vertical" horizontal-scroller-visibility="Hidden" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>
