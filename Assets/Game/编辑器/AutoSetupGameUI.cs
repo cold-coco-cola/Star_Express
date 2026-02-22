@@ -164,17 +164,16 @@ public static class AutoSetupGameUI
 
         const float pad = 20f, gap = 16f, w = 100f, h = 24f;
         float x = pad;
-        var score = MakeText(panel.transform, "ScoreText", "得分: 0", new Vector2(x, 0), new Vector2(w, h));
-        score.fontSize = 18;
-        score.color = new Color(0.95f, 0.95f, 1f);
-        x += w + gap;
         var ship = MakeText(panel.transform, "ShipCountText", "飞船: 0", new Vector2(x, 0), new Vector2(w, h));
         x += w + gap;
         var carriage = MakeText(panel.transform, "CarriageCountText", "客舱: 0", new Vector2(x, 0), new Vector2(w, h));
         x += w + gap;
         var starTunnel = MakeText(panel.transform, "StarTunnelCountText", "星隧: 0", new Vector2(x, 0), new Vector2(w, h));
-        x += w + gap * 2;
-        var weekCount = MakeText(panel.transform, "WeekCountdownText", "下周: 1:00", new Vector2(x, 0), new Vector2(110, h));
+
+        var score = MakeTextTopRight(panel.transform, "ScoreText", "得分: 0", -16f, new Vector2(140, 24));
+        var weekCount = MakeTextTopRight(panel.transform, "WeekCountdownText", "下周: 1:00", -44f, new Vector2(120, 24));
+        score.fontSize = 18;
+        score.color = new Color(0.95f, 0.95f, 1f);
 
         var comp = panel.AddComponent<GameHUD>();
         var so = new SerializedObject(comp);
@@ -194,6 +193,22 @@ public static class AutoSetupGameUI
         r.anchorMin = r.anchorMax = new Vector2(0, 0.5f);
         r.pivot = new Vector2(0, 0.5f);
         r.anchoredPosition = pos;
+        r.sizeDelta = size;
+        var t = go.AddComponent<Text>();
+        t.text = content;
+        t.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        t.fontSize = 18;
+        t.color = Color.white;
+        return t;
+    }
+
+    private static Text MakeTextTopRight(Transform parent, string name, string content, float yOffset, Vector2 size)
+    {
+        var go = MakeRect(parent, name);
+        var r = go.GetComponent<RectTransform>();
+        r.anchorMin = r.anchorMax = new Vector2(1f, 1f);
+        r.pivot = new Vector2(1f, 1f);
+        r.anchoredPosition = new Vector2(-16f, yOffset);
         r.sizeDelta = size;
         var t = go.AddComponent<Text>();
         t.text = content;

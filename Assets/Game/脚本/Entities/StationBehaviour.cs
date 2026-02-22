@@ -25,18 +25,21 @@ public class StationBehaviour : MonoBehaviour
     [Header("乘客生成")]
     [SerializeField] private float _spawnTimer;
     private int _nextPassengerId;
+    private bool _spawnTimerInitialized;
 
     private SpriteRenderer _visualRenderer;
     private bool _highlighted;
     private static readonly Color HighlightColor = new Color(1f, 1f, 0.4f, 1f);
 
     [Header("生成动画")]
-    [SerializeField] private float _spawnAnimDuration = 1.2f;
+    [SerializeField] private float _spawnAnimDuration = 1.8f;
+    [Tooltip("最大 overshoot 倍率（结合相机 ortho 计算）")]
+    [SerializeField] private float _spawnOvershootMax = 1.45f;
     private float _spawnAnimProgress = 1f;
 
     [Header("过载视觉")]
     [SerializeField] private float _overloadShakeAmount = 8f;
-    [SerializeField] private float _overloadScaleFactor = 1.15f;
+    [SerializeField] private float _overloadShakeAmountVertical = 0.12f;
     private float _overloadShakePhase;
 
     public bool IsCrowded => waitingPassengers.Count >= crowdingThreshold;
@@ -46,7 +49,8 @@ public class StationBehaviour : MonoBehaviour
 
     private void Awake()
     {
-        _visualRenderer = GetComponentInChildren<SpriteRenderer>();
+        var visual = transform.Find("Visual");
+        _visualRenderer = visual != null ? visual.GetComponent<SpriteRenderer>() : GetComponentInChildren<SpriteRenderer>();
     }
 
     /// <summary>播放从小变大的生成动画。</summary>
@@ -70,14 +74,22 @@ public class StationBehaviour : MonoBehaviour
         if (GameManager.Instance == null) return;
 
         float interval = GetSpawnInterval();
+        if (!_spawnTimerInitialized)
+        {
+            _spawnTimer = Random.Range(0f, interval);
+            _spawnTimerInitialized = true;
+        }
         _spawnTimer += Time.deltaTime;
-        if (_spawnTimer < interval) return;
-        _spawnTimer -= interval;
 
         var balance = GameManager.Instance.gameBalance;
         int count = balance != null ? balance.passengerSpawnCountPerStation : 1;
-        for (int i = 0; i < count; i++)
+        float subInterval = count > 1 ? interval / count : interval;
+
+        while (_spawnTimer >= subInterval)
+        {
+            _spawnTimer -= subInterval;
             SpawnPassenger();
+        }
     }
 
     /// <summary>获取当前生成间隔（考虑第一关 overrides 的分段间隔）。</summary>
@@ -104,7 +116,7 @@ public class StationBehaviour : MonoBehaviour
 
     /// <summary>
     /// 生成一名乘客（PRD §3.3）。
-    /// 目标形状：在已解锁站点的形状中均匀随机；不选自身形状除非有同形状的其他站。
+    /// 目标形状：在已解锁站点的形状中均匀随机；站点不生成与自己同类的乘客。
     /// </summary>
     private void SpawnPassenger()
     {
@@ -126,7 +138,7 @@ public class StationBehaviour : MonoBehaviour
         p.PlaySpawnAnimation();
     }
 
-    /// <summary>从已解锁站点的形状中均匀随机选取目标形状（排除仅自身拥有的形状）。</summary>
+    /// <summary>从已解锁站点的形状中均匀随机选取目标形状；站点不生成与自己同类的乘客。</summary>
     private ShapeType? PickTargetShape()
     {
         if (GameManager.Instance == null) return null;
@@ -137,25 +149,14 @@ public class StationBehaviour : MonoBehaviour
         foreach (var kv in stations)
         {
             if (!kv.Value.isUnlocked) continue;
-            if (kv.Value == this && !HasOtherStationWithShape(stations, stationType))
-                continue;
-            if (!shapes.Contains(kv.Value.stationType))
-                shapes.Add(kv.Value.stationType);
+            var shape = kv.Value.stationType;
+            if (shape == stationType) continue; // 不生成与自己同类的乘客
+            if (!shapes.Contains(shape))
+                shapes.Add(shape);
         }
 
         if (shapes.Count == 0) return null;
         return shapes[Random.Range(0, shapes.Count)];
-    }
-
-    private static bool HasOtherStationWithShape(Dictionary<string, StationBehaviour> stations, ShapeType shape)
-    {
-        int count = 0;
-        foreach (var kv in stations)
-        {
-            if (kv.Value.isUnlocked && kv.Value.stationType == shape)
-                count++;
-        }
-        return count >= 2;
     }
 
     /// <summary>若多站同形状，随机选一个目标站（首版）。</summary>
@@ -180,13 +181,16 @@ public class StationBehaviour : MonoBehaviour
         return candidates.Count > 0 ? candidates[Random.Range(0, candidates.Count)] : null;
     }
 
-    /// <summary>刷新排队乘客的站台位置。</summary>
+    /// <summary>刷新排队乘客的站台位置，并确保缩放正确（多线经停时避免异常放大）。</summary>
     public void RefreshPassengerPositions()
     {
         for (int i = 0; i < waitingPassengers.Count; i++)
         {
-            if (waitingPassengers[i] != null)
-                waitingPassengers[i].UpdateQueuePosition(i);
+            var p = waitingPassengers[i];
+            if (p == null) continue;
+            p.UpdateQueuePosition(i);
+            if (p.state == Passenger.PassengerState.Waiting)
+                p.transform.localScale = Vector3.one;
         }
     }
 
@@ -195,9 +199,20 @@ public class StationBehaviour : MonoBehaviour
         if (_visualRenderer == null) return;
         var visual = _visualRenderer.transform;
         float t = _spawnAnimProgress;
-        float ease = t * t;
         float baseScale = LevelLoader.GetStationVisualScale(_visualRenderer.sprite);
-        float scale = baseScale * ease;
+        float ortho = Camera.main != null ? Camera.main.orthographicSize : 10f;
+        float overshoot = Mathf.Lerp(1.2f, _spawnOvershootMax, Mathf.Clamp01(ortho / 15f));
+        float scale;
+        if (t < 0.4f)
+        {
+            float u = t / 0.4f;
+            scale = baseScale * u * u * overshoot;
+        }
+        else
+        {
+            float u = (t - 0.4f) / 0.6f;
+            scale = baseScale * Mathf.Lerp(overshoot, 1f, u * u);
+        }
         visual.localScale = Vector3.one * Mathf.Max(0.01f, scale);
     }
 
@@ -218,15 +233,30 @@ public class StationBehaviour : MonoBehaviour
             float baseScale = LevelLoader.GetStationVisualScale(_visualRenderer.sprite);
             if (overload)
             {
-                _overloadShakePhase += Time.deltaTime * 12f;
-                float shake = Mathf.Sin(_overloadShakePhase) * _overloadShakeAmount;
-                visual.localRotation = Quaternion.Euler(0, 0, shake);
-                visual.localScale = Vector3.one * (baseScale * _overloadScaleFactor);
+                float freq = 12f + fill * 24f;
+                float scaleFactor = Mathf.Lerp(1f, 1.5f, fill);
+                _overloadShakePhase += Time.deltaTime * freq;
+                float shakeAmount = _overloadShakeAmount * (0.7f + fill * 0.5f);
+                if (stationType == ShapeType.Circle)
+                {
+                    float vy = Mathf.Sin(_overloadShakePhase) * _overloadShakeAmountVertical * (0.8f + fill * 0.6f);
+                    visual.localRotation = Quaternion.identity;
+                    visual.localPosition = new Vector3(0, vy, visual.localPosition.z);
+                    visual.localScale = Vector3.one * (baseScale * scaleFactor);
+                }
+                else
+                {
+                    float shake = Mathf.Sin(_overloadShakePhase) * shakeAmount;
+                    visual.localRotation = Quaternion.Euler(0, 0, shake);
+                    visual.localPosition = new Vector3(0, 0, visual.localPosition.z);
+                    visual.localScale = Vector3.one * (baseScale * scaleFactor);
+                }
             }
             else
             {
                 _overloadShakePhase = 0f;
                 visual.localRotation = Quaternion.identity;
+                visual.localPosition = new Vector3(0, 0, visual.localPosition.z);
                 visual.localScale = Vector3.one * baseScale;
             }
         }

@@ -74,6 +74,6 @@ MonoBehaviour:
   - jupiter
   - saturn
   overrides:
-    passengerSpawnInterval: 10
+    passengerSpawnInterval: 14
     passengerSpawnIntervalAfterWeeks: 2
-    passengerSpawnIntervalLate: 8
+    passengerSpawnIntervalLate: 12

@@ -3,6 +3,7 @@ using UnityEngine;
 
 /// <summary>
 /// 根据图中站点分布调整相机视野：移动、缩放，使所有站点在视野内并留出边距。
+/// 支持鼠标滚轮以鼠标位置为中心缩放，便于点击飞船等小目标。
 /// 自动查找或创建背景，使背景随摄像机移动缩放。
 /// </summary>
 public class GameCamera : MonoBehaviour
@@ -10,16 +11,24 @@ public class GameCamera : MonoBehaviour
     [Header("视野参数")]
     [Tooltip("站点边界外的边距（世界单位）")]
     public float padding = 2f;
-    [Tooltip("最小正交尺寸（避免缩放过小）")]
+    [Tooltip("最小正交尺寸（缩放到此值后不能再放大，便于点击飞船）")]
     public float minOrthoSize = 4f;
     [Tooltip("最大正交尺寸（避免缩放过大）")]
     public float maxOrthoSize = 20f;
     [Tooltip("平滑跟随速度")]
     public float smoothSpeed = 2f;
 
+    [Header("滚轮缩放")]
+    [Tooltip("滚轮缩放灵敏度")]
+    public float scrollZoomSpeed = 2f;
+    [Tooltip("缩放平滑速度")]
+    public float zoomSmoothSpeed = 12f;
+
     private Camera _cam;
     private Vector3 _targetPosition;
     private float _targetOrthoSize;
+    private float _baseMaxOrthoSize; // 正常状态（视野最大）对应的 ortho，由站点边界计算
+    private bool _forceFitToBounds; // 新站点生成时强制适配视野
 
     private void Awake()
     {
@@ -29,8 +38,26 @@ public class GameCamera : MonoBehaviour
         {
             _targetPosition = _cam.transform.position;
             _targetOrthoSize = _cam.orthographicSize;
+            _baseMaxOrthoSize = _cam.orthographicSize;
         }
         EnsureBackgroundFollow();
+    }
+
+    private void Start()
+    {
+        var gm = GameManager.Instance;
+        if (gm != null) gm.OnStationSpawned += OnStationSpawned;
+    }
+
+    private void OnDestroy()
+    {
+        var gm = GameManager.Instance;
+        if (gm != null) gm.OnStationSpawned -= OnStationSpawned;
+    }
+
+    private void OnStationSpawned(StationBehaviour _)
+    {
+        _forceFitToBounds = true;
     }
 
     private void EnsureBackgroundFollow()
@@ -48,8 +75,28 @@ public class GameCamera : MonoBehaviour
         if (gm == null || gm.IsGameOver) return;
 
         ComputeTargetBounds(gm.GetAllStations());
+        HandleScrollZoom();
         _cam.transform.position = Vector3.Lerp(_cam.transform.position, _targetPosition, smoothSpeed * Time.deltaTime);
-        _cam.orthographicSize = Mathf.Lerp(_cam.orthographicSize, _targetOrthoSize, smoothSpeed * Time.deltaTime);
+        _cam.orthographicSize = Mathf.Lerp(_cam.orthographicSize, _targetOrthoSize, zoomSmoothSpeed * Time.deltaTime);
+    }
+
+    private void HandleScrollZoom()
+    {
+        float scroll = Input.GetAxis("Mouse ScrollWheel");
+        if (Mathf.Approximately(scroll, 0f)) return;
+
+        float oldOrtho = _targetOrthoSize;
+        float delta = -scroll * scrollZoomSpeed;
+        float newOrtho = Mathf.Clamp(_targetOrthoSize + delta, minOrthoSize, _baseMaxOrthoSize);
+        if (Mathf.Approximately(newOrtho, oldOrtho)) return;
+
+        // 以鼠标位置为中心缩放：保持鼠标下的世界点不变
+        float camDist = Mathf.Abs(_cam.transform.position.z);
+        Vector3 mouseScreen = new Vector3(Input.mousePosition.x, Input.mousePosition.y, camDist);
+        Vector3 worldPoint = _cam.ScreenToWorldPoint(mouseScreen);
+        float t = 1f - newOrtho / oldOrtho;
+        _targetPosition += (worldPoint - _targetPosition) * t;
+        _targetOrthoSize = newOrtho;
     }
 
     private void ComputeTargetBounds(Dictionary<string, StationBehaviour> stations)
@@ -81,11 +128,22 @@ public class GameCamera : MonoBehaviour
         float centerX = (minX + maxX) * 0.5f;
         float centerY = (minY + maxY) * 0.5f;
 
-        _targetPosition = new Vector3(centerX, centerY, _cam.transform.position.z);
-
         float aspect = _cam.aspect;
         float sizeByWidth = (width / aspect) * 0.5f;
         float sizeByHeight = height * 0.5f;
-        _targetOrthoSize = Mathf.Clamp(Mathf.Max(sizeByWidth, sizeByHeight), minOrthoSize, maxOrthoSize);
+        _baseMaxOrthoSize = Mathf.Clamp(Mathf.Max(sizeByWidth, sizeByHeight), minOrthoSize, maxOrthoSize);
+
+        // 新站点生成时强制适配；否则仅在视野最大时跟随，用户缩放后保持其视角
+        bool atMaxZoom = _targetOrthoSize >= _baseMaxOrthoSize * 0.98f;
+        if (_forceFitToBounds || atMaxZoom)
+        {
+            _targetPosition = new Vector3(centerX, centerY, _cam.transform.position.z);
+            _targetOrthoSize = _baseMaxOrthoSize;
+            _forceFitToBounds = false;
+        }
+        else
+        {
+            _targetOrthoSize = Mathf.Clamp(_targetOrthoSize, minOrthoSize, _baseMaxOrthoSize);
+        }
     }
 }

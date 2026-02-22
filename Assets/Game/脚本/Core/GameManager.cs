@@ -43,6 +43,8 @@ public class GameManager : MonoBehaviour
     public event Action<int> OnScoreChanged;
     /// <summary>游戏失败时触发，参数 = 导致失败的站点。</summary>
     public event Action<StationBehaviour> OnGameOver;
+    /// <summary>新站点生成时触发，相机可据此自动调整视野。</summary>
+    public event Action<StationBehaviour> OnStationSpawned;
 
     private const string LevelConfigPath = "Assets/Game/配置/LevelConfig_SolarSystem_01.asset";
     private const string StationPrefabPath = "Assets/Game/预制体/Station.prefab";
@@ -60,6 +62,7 @@ public class GameManager : MonoBehaviour
 
     public int CurrentWeek => currentWeek;
     public bool IsPausedForWeekReward => _waitingWeekRewardSelection;
+    public bool IsPausedByUser { get; private set; }
     public int Score => score;
     public bool IsGameOver => isGameOver;
     public float WeekDurationSeconds => gameBalance != null ? gameBalance.weekDurationSeconds : 60f;
@@ -91,6 +94,7 @@ public class GameManager : MonoBehaviour
         EnsureComponent<GameplayUIController>();
         EnsureComponent<CarriagePlacementInput>();
         EnsureComponent<StationSpawner>();
+        EnsureComponent<BackgroundMusic>();
         // PRD §3.1：周 0 持续 60 秒后首次发放，开局不发放。不在此处添加飞船。
     }
 
@@ -124,7 +128,9 @@ public class GameManager : MonoBehaviour
         weekTimer = 0f;
         score = 0;
         isGameOver = false;
+        IsPausedByUser = false;
         _levelLoaded = false;
+        Time.timeScale = 1f;
 
         if (levelConfig == null)
         {
@@ -169,6 +175,7 @@ public class GameManager : MonoBehaviour
     {
         if (isGameOver) return;
         if (_waitingWeekRewardSelection) return;
+        if (IsPausedByUser) return;
 
         // PRD §7.3 步骤 1：周计时 — 始终运行，不依赖关卡是否加载
         float duration = WeekDurationSeconds;
@@ -249,6 +256,20 @@ public class GameManager : MonoBehaviour
         string optName = chosen == WeekRewardSelectionPopup.RewardOption.Carriage ? "客舱" :
             chosen == WeekRewardSelectionPopup.RewardOption.StarTunnel ? "星隧" : "新线路";
         Debug.Log($"[GameManager] 周{_pendingWeekForReward} 奖励发放：飞船+1, {optName}+1");
+    }
+
+    /// <summary>通知新站点已生成，供 StationSpawner 调用。</summary>
+    public void NotifyStationSpawned(StationBehaviour station)
+    {
+        OnStationSpawned?.Invoke(station);
+    }
+
+    /// <summary>用户暂停/继续。周奖励选择期间不生效。</summary>
+    public void SetUserPaused(bool paused)
+    {
+        if (_waitingWeekRewardSelection) return;
+        IsPausedByUser = paused;
+        Time.timeScale = paused ? 0f : 1f;
     }
 
     private static void ApplyRewardOption(LineManager lm, WeekRewardSelectionPopup.RewardOption opt)

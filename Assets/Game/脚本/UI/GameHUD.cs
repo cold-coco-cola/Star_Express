@@ -16,6 +16,9 @@ public class GameHUD : BasePanel
 
     private void Start()
     {
+        var topPlaceBtn = transform.Find("CarriagePlaceButton");
+        if (topPlaceBtn != null) topPlaceBtn.gameObject.SetActive(false);
+
         if (scoreText == null) scoreText = FindChildText(transform, "ScoreText");
         if (shipCountText == null) shipCountText = FindChildText(transform, "ShipCountText");
         if (carriageCountText == null) carriageCountText = FindChildText(transform, "CarriageCountText");
@@ -111,4 +114,5 @@ public class GameHUD : BasePanel
         if (canvas == null) return null;
         return FindChildText(canvas.transform, name);
     }
+
 }

@@ -45,6 +45,16 @@ public class Passenger : MonoBehaviour
         }
     }
 
+    /// <summary>LateUpdate 中再次修正缩放，确保站台乘客不受其他逻辑影响而异常放大（多线经停、飞船到达时）。</summary>
+    private void LateUpdate()
+    {
+        if (state != PassengerState.Waiting) return;
+        if (_spawnAnimProgress < 1f) return;
+        if (transform.parent == null) return;
+        if (transform.parent.GetComponent<StationBehaviour>() == null) return;
+        transform.localScale = Vector3.one;
+    }
+
     /// <summary>设置乘客头顶目标形状图标。</summary>
     public void ApplyVisual()
     {
@@ -57,6 +67,10 @@ public class Passenger : MonoBehaviour
             _iconRenderer = iconGo.AddComponent<SpriteRenderer>();
             _iconRenderer.sortingLayerID = SortingOrderConstants.ShipsLayerId;
             _iconRenderer.sortingOrder = state == PassengerState.Waiting ? SortingOrderConstants.StationPassenger : SortingOrderConstants.Passenger;
+        }
+        else if (state == PassengerState.Waiting)
+        {
+            _iconRenderer.transform.localScale = Vector3.one * 0.25f;
         }
 
         var vc = GameManager.Instance != null ? GameManager.Instance.visualConfig : null;
@@ -98,7 +112,7 @@ public class Passenger : MonoBehaviour
         currentStation = null;
     }
 
-    /// <summary>换乘下船，加入新站排队。恢复站台乘客的视觉（颜色、缩放），与首次生成的乘客一致。</summary>
+    /// <summary>换乘下船，加入新站排队。ApplyVisual 会恢复 icon 的 scale=0.25（船上为 1），避免换乘乘客显示异常放大。</summary>
     public void TransferToStation(StationBehaviour station)
     {
         state = PassengerState.Waiting;
@@ -108,13 +122,8 @@ public class Passenger : MonoBehaviour
         transform.SetParent(station.transform, false);
         transform.localScale = Vector3.one;
         gameObject.SetActive(true);
-        ApplyVisual();
-        if (_iconRenderer != null)
-        {
-            _iconRenderer.sortingLayerID = SortingOrderConstants.ShipsLayerId;
-            _iconRenderer.sortingOrder = SortingOrderConstants.StationPassenger;
-        }
         UpdateQueuePosition(station.waitingPassengers.Count - 1);
+        ApplyVisual();
     }
 
     private static Sprite _placeholderShapeSprite;

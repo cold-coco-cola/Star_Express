@@ -20,6 +20,8 @@ public class GameUIRuntimeBootstrap : MonoBehaviour
     {
         EnsureWeekRewardSelectionPopup();
         EnsureGameOverPopup();
+        EnsurePauseMenu();
+        EnsurePauseButton();
     }
 
     private static void EnsureWeekRewardSelectionPopup()
@@ -98,6 +100,143 @@ public class GameUIRuntimeBootstrap : MonoBehaviour
         panel.AddComponent<PopupShowAnim>();
         panel.SetActive(false);
         Debug.Log("[GameUIRuntimeBootstrap] 已创建 GameOverPopup");
+    }
+
+    private static void EnsurePauseMenu()
+    {
+        if (Object.FindObjectOfType<PauseMenu>() != null) return;
+
+        var canvas = GameObject.Find("GameCanvas");
+        if (canvas == null) return;
+
+        var panel = new GameObject("PauseMenu");
+        panel.transform.SetParent(canvas.transform, false);
+
+        var pr = panel.AddComponent<RectTransform>();
+        pr.anchorMin = pr.anchorMax = new Vector2(0.5f, 0.5f);
+        pr.sizeDelta = new Vector2(320, 220);
+        pr.anchoredPosition = Vector2.zero;
+
+        var bg = panel.AddComponent<Image>();
+        bg.color = new Color(0.08f, 0.1f, 0.14f, 0.95f);
+        bg.raycastTarget = true;
+
+        var title = CreateText(panel.transform, "TitleText", "暂停", new Vector2(0, 70), new Vector2(280, 32), 24);
+        var resumeBtn = CreateButton(panel.transform, "ResumeButton", "继续游戏", new Vector2(0, -20), new Vector2(160, 40), new Color(0.25f, 0.5f, 0.35f));
+
+        float volY = -70, volW = 200, volH = 24;
+        var volLabel = CreateText(panel.transform, "VolumeLabel", "音量: 60%", new Vector2(-volW * 0.5f - 50, volY), new Vector2(80, 24), 16);
+        volLabel.alignment = TextAnchor.MiddleLeft;
+        var slider = CreateVolumeSlider(panel.transform, "VolumeSlider", new Vector2(0, volY), new Vector2(volW, volH));
+
+        var comp = panel.AddComponent<PauseMenu>();
+        comp.resumeButton = resumeBtn;
+        comp.volumeSlider = slider;
+        comp.volumeLabel = volLabel;
+
+        AddButtonClickAnim(resumeBtn);
+        panel.AddComponent<PopupShowAnim>();
+        panel.SetActive(false);
+        Debug.Log("[GameUIRuntimeBootstrap] 已创建 PauseMenu");
+    }
+
+    private static void EnsurePauseButton()
+    {
+        if (GameObject.Find("PauseButton") != null) return;
+
+        var canvas = GameObject.Find("GameCanvas");
+        if (canvas == null) return;
+
+        var hud = Object.FindObjectOfType<GameHUD>();
+        var parent = hud != null ? hud.transform : canvas.transform;
+
+        var btn = CreateButton(parent, "PauseButton", "⏸", Vector2.zero, new Vector2(44, 44), new Color(0.35f, 0.4f, 0.5f));
+        btn.gameObject.name = "PauseButton";
+        var r = btn.GetComponent<RectTransform>();
+        r.anchorMin = new Vector2(0, 1);
+        r.anchorMax = new Vector2(0, 1);
+        r.pivot = new Vector2(0, 1);
+        r.anchoredPosition = new Vector2(12, -12);
+        r.sizeDelta = new Vector2(44, 44);
+        btn.GetComponentInChildren<Text>().fontSize = 22;
+
+        btn.onClick.AddListener(() =>
+        {
+            var gm = GameManager.Instance;
+            if (gm == null || gm.IsGameOver || gm.IsPausedForWeekReward) return;
+            var menu = Object.FindObjectOfType<PauseMenu>(true);
+            if (menu != null)
+            {
+                if (gm.IsPausedByUser)
+                {
+                    gm.SetUserPaused(false);
+                    menu.Hide();
+                }
+                else
+                {
+                    gm.SetUserPaused(true);
+                    menu.Show();
+                    menu.transform.SetAsLastSibling();
+                }
+            }
+        });
+        AddButtonClickAnim(btn);
+        Debug.Log("[GameUIRuntimeBootstrap] 已创建 PauseButton");
+    }
+
+    private static Slider CreateVolumeSlider(Transform parent, string name, Vector2 pos, Vector2 size)
+    {
+        var go = new GameObject(name);
+        go.transform.SetParent(parent, false);
+        var r = go.AddComponent<RectTransform>();
+        r.anchorMin = r.anchorMax = new Vector2(0.5f, 0.5f);
+        r.pivot = new Vector2(0.5f, 0.5f);
+        r.anchoredPosition = pos;
+        r.sizeDelta = size;
+
+        var bg = go.AddComponent<Image>();
+        bg.color = new Color(0.2f, 0.22f, 0.28f);
+
+        var fillArea = new GameObject("Fill Area");
+        fillArea.transform.SetParent(go.transform, false);
+        var faRect = fillArea.AddComponent<RectTransform>();
+        faRect.anchorMin = new Vector2(0, 0.25f);
+        faRect.anchorMax = new Vector2(1, 0.75f);
+        faRect.offsetMin = new Vector2(4, 2);
+        faRect.offsetMax = new Vector2(-4, -2);
+
+        var fill = new GameObject("Fill");
+        fill.transform.SetParent(fillArea.transform, false);
+        var fillRect = fill.AddComponent<RectTransform>();
+        fillRect.anchorMin = Vector2.zero;
+        fillRect.anchorMax = Vector2.one;
+        fillRect.offsetMin = fillRect.offsetMax = Vector2.zero;
+        var fillImg = fill.AddComponent<Image>();
+        fillImg.color = new Color(0.35f, 0.5f, 0.4f);
+
+        var handleArea = new GameObject("Handle Slide Area");
+        handleArea.transform.SetParent(go.transform, false);
+        var haRect = handleArea.AddComponent<RectTransform>();
+        haRect.anchorMin = Vector2.zero;
+        haRect.anchorMax = Vector2.one;
+        haRect.offsetMin = new Vector2(10, 0);
+        haRect.offsetMax = new Vector2(-10, 0);
+
+        var handle = new GameObject("Handle");
+        handle.transform.SetParent(handleArea.transform, false);
+        var hRect = handle.AddComponent<RectTransform>();
+        hRect.sizeDelta = new Vector2(20, 0);
+        var hImg = handle.AddComponent<Image>();
+        hImg.color = new Color(0.6f, 0.7f, 0.65f);
+
+        var slider = go.AddComponent<Slider>();
+        slider.fillRect = fillRect;
+        slider.handleRect = hRect;
+        slider.direction = Slider.Direction.LeftToRight;
+        slider.minValue = 0f;
+        slider.maxValue = 1f;
+        slider.value = PlayerPrefs.GetFloat(BackgroundMusic.VolumePrefKey, 0.6f);
+        return slider;
     }
 
     private static Button CreateButton(Transform parent, string name, string label, Vector2 pos, Vector2 size, Color color)

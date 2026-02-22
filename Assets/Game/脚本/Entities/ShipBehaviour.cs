@@ -148,6 +148,7 @@ public class ShipBehaviour : MonoBehaviour
         {
             var p = passengers[i];
             if (p == null) continue;
+            if (p.currentShip != this) continue;
             if (p.transform.parent != transform)
                 p.transform.SetParent(transform, false);
             p.gameObject.SetActive(true);
@@ -559,14 +560,14 @@ public class ShipBehaviour : MonoBehaviour
             p.TransferToStation(station);
         }
 
-        // 3. 载客（先到先上）
+        // 3. 载客（先到先上）。须先 Add 再 BoardShip，否则 BoardShip 内 RefreshPassengerPositionsOnShip 时新乘客尚未在列表中，不会被设置船上 scale，导致换乘后上另一艘船的乘客显示异常放大。
         foreach (var p in result.ToLoad)
         {
             if (p == null) continue;
             if (passengers.Count >= capacity) break;
             if (!station.waitingPassengers.Remove(p)) continue;
-            p.BoardShip(this);
             passengers.Add(p);
+            p.BoardShip(this);
         }
 
         RefreshPassengerPositionsOnShip();

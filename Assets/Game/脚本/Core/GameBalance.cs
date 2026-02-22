@@ -15,7 +15,7 @@ public class GameBalance : ScriptableObject
 
     [Header("乘客生成")]
     [Tooltip("乘客生成间隔(秒/站)，数值越大乘客来得越慢")]
-    public float passengerSpawnInterval = 10f;
+    public float passengerSpawnInterval = 14f;
     [Tooltip("每站同时生成数量")]
     public int passengerSpawnCountPerStation = 1;
 

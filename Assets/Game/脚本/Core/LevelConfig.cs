@@ -16,9 +16,9 @@ public class StationConfig
 [Serializable]
 public class LevelConfigOverrides
 {
-    public float passengerSpawnInterval = 5f;
+    public float passengerSpawnInterval = 14f;
     public int passengerSpawnIntervalAfterWeeks = 0;
-    public float passengerSpawnIntervalLate = 5f;
+    public float passengerSpawnIntervalLate = 12f;
 }
 
 [CreateAssetMenu(fileName = "LevelConfig", menuName = "Star Express/Level Config", order = 1)]

@@ -16,7 +16,7 @@ MonoBehaviour:
   crowdingThreshold: 6
   deathThreshold: 8
   deathDurationSeconds: 20
-  passengerSpawnInterval: 10
+  passengerSpawnInterval: 14
   passengerSpawnCountPerStation: 1
   weekDurationSeconds: 60
   shipCapacity: 4
