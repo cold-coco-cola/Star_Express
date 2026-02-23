@@ -61,7 +61,8 @@ public class BackgroundCameraFollow : MonoBehaviour
         float aspect = _cam.aspect;
         float viewHeight = ortho * 2f;
         float viewWidth = viewHeight * aspect;
-        float scaleMult = scaleFactor;
+        // 地图变大、视野变广时，背景缩放更明显，避免「缩放后感觉没变」
+        float scaleMult = scaleFactor * (1f + ortho * 0.04f);
         if (initialScaleDuration > 0 && initialScaleFactor > 1f)
         {
             float t = Mathf.Clamp01(_gameTime / initialScaleDuration);

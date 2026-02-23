@@ -18,7 +18,7 @@ MonoBehaviour:
   deathDurationSeconds: 20
   passengerSpawnInterval: 14
   passengerSpawnCountPerStation: 1
-  weekDurationSeconds: 60
+  weekDurationSeconds: 90
   shipCapacity: 4
   carriageCapacityIncrement: 2
   shipSpeedUnitsPerSecond: 1.5

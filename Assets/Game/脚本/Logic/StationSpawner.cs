@@ -2,18 +2,25 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// 无尽模式：每周在 20s～45s 内分散生成新站点。
-/// 每周生成 1（30%）或 2（70%）个站点；尽量远离已有线路；多个站点错开时间生成。
-/// 站点间距不足时拒绝生成；距线路过近时可吸附为线上站。
+/// 无尽模式：每周在 1/5～4/5 时段内分散生成新站点。
+/// 每周生成 2（40%）或 3（60%）个站点；倾向向外扩张；站点间距不足时拒绝生成。
 /// </summary>
 public class StationSpawner : MonoBehaviour
 {
+    private const float SpawnCountTwoProbability = 0.4f;
+    private const float SpawnWindowStart = 0.2f;
+    private const float SpawnWindowEnd = 0.8f;
+    private const float MinSpawnGapSeconds = 10f;
+
     /// <summary>距线路小于此倍数×minD 时拒绝独立生成；若开启吸附则尝试吸附为线上站。</summary>
     private const float MinDistanceFromLineFactor = 0.6f;
     /// <summary>吸附时，新站与线段两端的最小距离（倍数×minD），避免与端点重叠。</summary>
     private const float SnapMinDistanceFromEndpointFactor = 0.4f;
-    private const float SpawnTimeMin = 20f;
-    private const float SpawnTimeMax = 45f;
+
+    private const int StrictAttempts = 50;
+    private const int RelaxedAttempts = 30;
+    private const float RelaxedMinDFactor = 0.55f;
+    private const float RelaxedMaxDFactor = 1.2f;
 
     private float _weekTimer;
     private readonly List<float> _scheduledSpawnTimes = new List<float>();
@@ -31,18 +38,17 @@ public class StationSpawner : MonoBehaviour
         {
             _lastWeek = week;
             _scheduledSpawnTimes.Clear();
-            int toSpawn = Random.value < 0.7f ? 2 : 1;
-            const float minGap = 8f;
-            if (toSpawn == 1)
+            float weekDur = gm.WeekDurationSeconds;
+            float spawnMin = weekDur * SpawnWindowStart;
+            float spawnMax = weekDur * SpawnWindowEnd;
+            int toSpawn = Random.value < SpawnCountTwoProbability ? 2 : 3;
+            float span = spawnMax - spawnMin;
+            float totalGap = MinSpawnGapSeconds * (toSpawn - 1);
+            float segSize = Mathf.Max(0.1f, (span - totalGap) / toSpawn);
+            for (int k = 0; k < toSpawn; k++)
             {
-                _scheduledSpawnTimes.Add(SpawnTimeMin + Random.Range(0f, SpawnTimeMax - SpawnTimeMin));
-            }
-            else
-            {
-                float t1 = SpawnTimeMin + Random.Range(0f, SpawnTimeMax - SpawnTimeMin - minGap);
-                float t2 = t1 + minGap + Random.Range(0f, SpawnTimeMax - t1 - minGap);
-                _scheduledSpawnTimes.Add(t1);
-                _scheduledSpawnTimes.Add(t2);
+                float segStart = spawnMin + k * (segSize + MinSpawnGapSeconds);
+                _scheduledSpawnTimes.Add(segStart + Random.Range(0f, segSize));
             }
         }
 
@@ -123,11 +129,6 @@ public class StationSpawner : MonoBehaviour
     {
         float minD = config.spawnDistanceMin * LevelLoader.StationPositionScale;
         float maxD = config.spawnDistanceMax * LevelLoader.StationPositionScale;
-        float minFromLine = minD * MinDistanceFromLineFactor;
-        float snapThreshold = config.spawnSnapToLineThreshold > 0
-            ? config.spawnSnapToLineThreshold * LevelLoader.StationPositionScale
-            : minFromLine;
-        float minFromEndpoint = minD * SnapMinDistanceFromEndpointFactor;
 
         var list = new List<StationBehaviour>();
         foreach (var kv in stations)
@@ -135,38 +136,126 @@ public class StationSpawner : MonoBehaviour
                 list.Add(kv.Value);
         if (list.Count == 0) return null;
 
+        float lateScale = GetLateGameDistanceScale(list.Count);
+        minD *= lateScale;
+        maxD *= lateScale;
+
+        float minFromLine = minD * MinDistanceFromLineFactor;
+        float snapThreshold = config.spawnSnapToLineThreshold > 0
+            ? config.spawnSnapToLineThreshold * LevelLoader.StationPositionScale
+            : minFromLine;
+        float minFromEndpoint = minD * SnapMinDistanceFromEndpointFactor;
+
         var lm = gm != null ? gm.GetLineManagerComponent() : null;
         var allLines = lm != null ? lm.Lines : null;
 
         Vector2 centroid = ComputeCentroid(list);
         float preferredAngle = GetPreferredSpawnAngle(centroid, list);
+        float avgDistFromCentroid = GetAverageDistanceFromCentroid(centroid, list);
 
-        for (int attempt = 0; attempt < 50; attempt++)
+        for (int attempt = 0; attempt < StrictAttempts; attempt++)
         {
-            float angleJitter = Random.Range(-90f, 90f) * Mathf.Deg2Rad;
-            float angle = (preferredAngle * Mathf.Deg2Rad) + angleJitter;
-            float dist = Random.Range(minD, maxD);
-            Vector2 offset = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * dist;
-            Vector3 candidate = new Vector3(centroid.x + offset.x, centroid.y + offset.y, 0f);
+            if (TryFindValidPosition(centroid, preferredAngle, minD, maxD, minFromLine, minFromEndpoint, avgDistFromCentroid, list.Count, config, allLines, list, out SpawnResult result))
+                return result;
+        }
 
-            foreach (var s in list)
-            {
-                if (Vector2.Distance(s.transform.position, candidate) < minD) goto nextAttempt;
-            }
+        float relaxedMinD = minD * RelaxedMinDFactor;
+        float relaxedMinFromEndpoint = minFromEndpoint * 0.5f;
+        for (int attempt = 0; attempt < RelaxedAttempts; attempt++)
+        {
+            if (TryFindValidPosition(centroid, preferredAngle, relaxedMinD, maxD * RelaxedMaxDFactor, relaxedMinD * MinDistanceFromLineFactor, relaxedMinFromEndpoint, avgDistFromCentroid, list.Count, config, allLines, list, out SpawnResult result))
+                return result;
+        }
 
-            if (allLines != null && allLines.Count > 0)
-            {
-                var snap = TryFindSnapPosition(config, candidate, allLines, list, minFromLine, snapThreshold, minFromEndpoint);
-                if (snap.HasValue)
-                    return snap.Value;
-                float distToLine = GetMinDistanceToLines(candidate, allLines);
-                if (distToLine < minFromLine) continue;
-            }
-            return new SpawnResult { position = candidate };
-        nextAttempt:;
+        if (allLines != null && allLines.Count > 0 && config != null && config.spawnSnapToLineThreshold > 0)
+        {
+            var snap = TryFindAnyValidSnap(allLines, list, relaxedMinFromEndpoint);
+            if (snap.HasValue) return snap.Value;
         }
 
         return null;
+    }
+
+    private bool TryFindValidPosition(Vector2 centroid, float preferredAngle, float minD, float maxD, float minFromLine, float minFromEndpoint, float avgDistFromCentroid, int stationCount, LevelConfig config, IReadOnlyList<Line> allLines, List<StationBehaviour> list, out SpawnResult result)
+    {
+        result = default;
+        float snapThreshold = config != null && config.spawnSnapToLineThreshold > 0
+            ? config.spawnSnapToLineThreshold * LevelLoader.StationPositionScale
+            : minFromLine;
+
+        float angleJitter = Random.Range(-90f, 90f) * Mathf.Deg2Rad;
+        float angle = (preferredAngle * Mathf.Deg2Rad) + angleJitter;
+        // 整体扩张趋势：新站倾向在「当前平均半径」之外；后期增强向外倾向
+        float frontier = Mathf.Clamp(avgDistFromCentroid, minD, maxD * 0.95f);
+        float dist;
+        if (stationCount >= 18)
+        {
+            dist = frontier + Random.Range(0.55f, 1f) * Mathf.Max(0.1f, maxD - frontier);
+        }
+        else if (stationCount >= 12)
+        {
+            dist = frontier + Random.Range(0.35f, 1f) * Mathf.Max(0.1f, maxD - frontier);
+        }
+        else
+        {
+            dist = frontier + Random.Range(0f, Mathf.Max(0.1f, maxD - frontier));
+        }
+        dist = Mathf.Clamp(dist, minD, maxD);
+        Vector2 offset = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * dist;
+        Vector3 candidate = new Vector3(centroid.x + offset.x, centroid.y + offset.y, 0f);
+
+        foreach (var s in list)
+        {
+            if (Vector2.Distance(s.transform.position, candidate) < minD) return false;
+        }
+
+        if (allLines != null && allLines.Count > 0)
+        {
+            var snap = TryFindSnapPosition(config, candidate, allLines, list, minFromLine, snapThreshold, minFromEndpoint);
+            if (snap.HasValue)
+            {
+                result = snap.Value;
+                return true;
+            }
+            float distToLine = GetMinDistanceToLines(candidate, allLines);
+            if (distToLine < minFromLine) return false;
+        }
+        result = new SpawnResult { position = candidate };
+        return true;
+    }
+
+    /// <summary>遍历所有线段，寻找任意可吸附的线上位置（兜底用）。</summary>
+    private SpawnResult? TryFindAnyValidSnap(IReadOnlyList<Line> lines, List<StationBehaviour> allStations, float minFromEndpoint)
+    {
+        var candidates = new List<(Line line, int seg, Vector3 pos, float t)>();
+        foreach (var line in lines)
+        {
+            if (line == null || line.stationSequence == null) continue;
+            var seq = line.stationSequence;
+            for (int i = 0; i < seq.Count - 1; i++)
+            {
+                var a = seq[i];
+                var b = seq[i + 1];
+                if (a == null || b == null) continue;
+                for (int k = 1; k <= 4; k++)
+                {
+                    float t = k / 5f;
+                    Vector3 p = Vector3.Lerp(a.transform.position, b.transform.position, t);
+                    float dA = Vector2.Distance(p, a.transform.position);
+                    float dB = Vector2.Distance(p, b.transform.position);
+                    if (dA < minFromEndpoint || dB < minFromEndpoint) continue;
+                    bool ok = true;
+                    foreach (var s in allStations)
+                    {
+                        if (Vector2.Distance(s.transform.position, p) < minFromEndpoint) { ok = false; break; }
+                    }
+                    if (ok) candidates.Add((line, i, p, t));
+                }
+            }
+        }
+        if (candidates.Count == 0) return null;
+        var c = candidates[Random.Range(0, candidates.Count)];
+        return new SpawnResult { position = c.pos, lineToInsertInto = c.line, segmentIndex = c.seg, insertProgress = c.t };
     }
 
     /// <summary>当候选点距线路过近时，尝试吸附到线段上成为线上站。</summary>
@@ -227,12 +316,31 @@ public class StationSpawner : MonoBehaviour
         return Vector2.Distance(new Vector2(p.x, p.y), closest2);
     }
 
+    /// <summary>后期站点增多时，增大最小距离限制，避免过密。</summary>
+    private static float GetLateGameDistanceScale(int stationCount)
+    {
+        if (stationCount < 12) return 1f;
+        if (stationCount < 24) return 1f + (stationCount - 12) * 0.02f;
+        if (stationCount < 36) return 1.24f + (stationCount - 24) * 0.025f;
+        return Mathf.Min(1.8f, 1.54f + (stationCount - 36) * 0.015f);
+    }
+
     /// <summary>计算所有站点的质心。</summary>
     private static Vector2 ComputeCentroid(List<StationBehaviour> list)
     {
         Vector2 sum = Vector2.zero;
         foreach (var s in list)
             sum += (Vector2)s.transform.position;
+        return sum / list.Count;
+    }
+
+    /// <summary>站点到质心的平均距离，用于扩张趋势：新站倾向在此半径之外。</summary>
+    private static float GetAverageDistanceFromCentroid(Vector2 centroid, List<StationBehaviour> list)
+    {
+        if (list == null || list.Count == 0) return 0f;
+        float sum = 0f;
+        foreach (var s in list)
+            sum += Vector2.Distance((Vector2)s.transform.position, centroid);
         return sum / list.Count;
     }
 

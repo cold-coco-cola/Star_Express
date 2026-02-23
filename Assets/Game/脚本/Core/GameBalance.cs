@@ -21,7 +21,7 @@ public class GameBalance : ScriptableObject
 
     [Header("时间")]
     [Tooltip("游戏内 1 周(秒)")]
-    public float weekDurationSeconds = 60f;
+    public float weekDurationSeconds = 90f;
 
     [Header("飞船")]
     [Tooltip("飞船容量(人)")]

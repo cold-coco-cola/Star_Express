@@ -35,8 +35,8 @@ public class LevelConfig : ScriptableObject
     [Header("无尽模式：开局与随机生成")]
     [Tooltip("开局加载的站点数量（取 stations 前 N 个）")]
     public int startStationCount = 3;
-    [Tooltip("新站生成：距最近站点的最小距离（世界单位）")]
-    public float spawnDistanceMin = 1.5f;
+    [Tooltip("新站生成：距最近站点的最小距离（世界单位），保证站点与乘客显示不重合")]
+    public float spawnDistanceMin = 2.2f;
     [Tooltip("新站生成：距最近站点的最大距离（世界单位）")]
     public float spawnDistanceMax = 3.5f;
     [Tooltip("距线路过近时吸附为线上站：距离阈值（世界单位），0 表示不吸附")]

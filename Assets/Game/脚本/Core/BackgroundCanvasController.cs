@@ -29,8 +29,9 @@ public class BackgroundCanvasController : MonoBehaviour
         float aspect = _cam.aspect;
         float viewHeight = ortho * 2f;
         float viewWidth = viewHeight * aspect;
-        float w = viewWidth * scaleFactor;
-        float h = viewHeight * scaleFactor;
+        float scaleMult = scaleFactor * (1f + ortho * 0.04f);
+        float w = viewWidth * scaleMult;
+        float h = viewHeight * scaleMult;
         _rect.sizeDelta = new Vector2(w, h);
     }
 }

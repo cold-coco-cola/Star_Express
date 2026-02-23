@@ -32,14 +32,15 @@ public class StationBehaviour : MonoBehaviour
     private static readonly Color HighlightColor = new Color(1f, 1f, 0.4f, 1f);
 
     [Header("生成动画")]
-    [SerializeField] private float _spawnAnimDuration = 1.8f;
-    [Tooltip("最大 overshoot 倍率（结合相机 ortho 计算）")]
-    [SerializeField] private float _spawnOvershootMax = 1.45f;
+    [SerializeField] private float _spawnAnimDuration = 2.8f;
+    [Tooltip("最大 overshoot 倍率：先放大再缩回，更明显")]
+    [SerializeField] private float _spawnOvershootMax = 1.65f;
     private float _spawnAnimProgress = 1f;
 
     [Header("点击弹起")]
-    [SerializeField] private float _clickPopDuration = 0.2f;
-    [SerializeField] private float _clickPopScale = 1.2f;
+    [SerializeField] private float _clickPopDuration = 1.2f;
+    [SerializeField] private float _clickPopScale = 1.25f;
+    [SerializeField] private float _clickPopShakeAmount = 4f;
     private float _clickPopProgress = 1f;
 
     [Header("过载视觉")]
@@ -58,10 +59,11 @@ public class StationBehaviour : MonoBehaviour
         _visualRenderer = visual != null ? visual.GetComponent<SpriteRenderer>() : GetComponentInChildren<SpriteRenderer>();
     }
 
-    /// <summary>播放从小变大的生成动画。</summary>
+    /// <summary>播放从小变大的生成动画，含黑→原色过渡。</summary>
     public void PlaySpawnAnimation()
     {
         _spawnAnimProgress = 0f;
+        if (_visualRenderer != null) _visualRenderer.color = Color.black;
     }
 
     private void Update()
@@ -71,6 +73,12 @@ public class StationBehaviour : MonoBehaviour
             _spawnAnimProgress += Time.deltaTime / Mathf.Max(0.01f, _spawnAnimDuration);
             if (_spawnAnimProgress > 1f) _spawnAnimProgress = 1f;
             ApplySpawnAnimScale();
+            if (_visualRenderer != null)
+                _visualRenderer.color = Color.Lerp(Color.black, Color.white, _spawnAnimProgress);
+        }
+        else if (_visualRenderer != null && _spawnAnimProgress >= 1f)
+        {
+            if (!_highlighted) _visualRenderer.color = isUnlocked ? Color.white : new Color(1f, 1f, 1f, 0.5f);
         }
         if (_clickPopProgress < 1f)
         {
@@ -169,7 +177,7 @@ public class StationBehaviour : MonoBehaviour
         return shapes[Random.Range(0, shapes.Count)];
     }
 
-    /// <summary>若多站同形状，随机选一个目标站（首版）。</summary>
+    /// <summary>若多站同形状，返回 null，让乘客在第一个到达的同形状站下车；单站时返回其 id 以便精确匹配。</summary>
     private string PickTargetStationId(ShapeType shape)
     {
         if (GameManager.Instance == null) return null;
@@ -188,7 +196,9 @@ public class StationBehaviour : MonoBehaviour
                     candidates.Add(kv.Key);
             }
         }
-        return candidates.Count > 0 ? candidates[Random.Range(0, candidates.Count)] : null;
+        if (candidates.Count == 0) return null;
+        if (candidates.Count == 1) return candidates[0];
+        return null; // 多站同形状：不指定具体站，在第一个到达的同形状站下车
     }
 
     /// <summary>刷新排队乘客的站台位置，并确保缩放正确（多线经停时避免异常放大）。</summary>
@@ -216,29 +226,45 @@ public class StationBehaviour : MonoBehaviour
         visual.localScale = Vector3.one * Mathf.Max(0.01f, scale);
     }
 
+    /// <summary>点击弹起缩放：1→放大(前25%)→缩回(后75%)，缩回放慢更舒缓。</summary>
     private float GetClickPopScale()
     {
         if (_clickPopProgress >= 1f) return 1f;
         float t = _clickPopProgress;
-        float curve = 1f - (2f * t - 1f) * (2f * t - 1f);
-        return Mathf.Lerp(1f, _clickPopScale, curve);
+        if (t < 0.22f)
+        {
+            float u = t / 0.22f;
+            return Mathf.Lerp(1f, _clickPopScale, 1f - (1f - u) * (1f - u));
+        }
+        float u2 = (t - 0.22f) / 0.78f;
+        float decay = Mathf.Exp(-2.2f * u2);
+        float bounce = Mathf.Cos(2.5f * Mathf.PI * u2);
+        return 1f + (_clickPopScale - 1f) * decay * bounce;
     }
 
-    /// <summary>弹性缓动：0→overshoot→轻微回弹→小 overshoot→1，丝滑 q 弹。</summary>
+    private float GetClickPopShake()
+    {
+        if (_clickPopProgress >= 1f) return 0f;
+        float t = _clickPopProgress;
+        float decay = 1f - t * t;
+        return Mathf.Sin(t * 12f * Mathf.PI) * decay * _clickPopShakeAmount;
+    }
+
+    /// <summary>弹性缓动：0→快速到 overshoot→回弹→轻微 overshoot→1，先放大再缩回更明显。</summary>
     private static float EaseElasticSpawn(float t, float overshoot)
     {
-        if (t < 0.26f)
+        if (t < 0.18f)
         {
-            float u = t / 0.26f;
+            float u = t / 0.18f;
             float easeOut = 1f - (1f - u) * (1f - u) * (1f - u);
             return easeOut * overshoot;
         }
-        float u2 = (t - 0.26f) / 0.74f;
-        float decay = Mathf.Exp(-3f * u2);
-        float bounce = Mathf.Cos(4f * Mathf.PI * u2);
+        float u2 = (t - 0.18f) / 0.82f;
+        float decay = Mathf.Exp(-2.5f * u2);
+        float bounce = Mathf.Cos(3.5f * Mathf.PI * u2);
         float elastic = 1f + (overshoot - 1f) * decay * bounce;
-        if (t > 0.92f)
-            return Mathf.Lerp(elastic, 1f, (t - 0.92f) / 0.08f);
+        if (t > 0.88f)
+            return Mathf.Lerp(elastic, 1f, (t - 0.88f) / 0.12f);
         return elastic;
     }
 
@@ -259,30 +285,34 @@ public class StationBehaviour : MonoBehaviour
             float baseScale = LevelLoader.GetStationVisualScale(_visualRenderer.sprite);
             if (overload)
             {
-                float freq = 12f + fill * 24f;
-                float scaleFactor = Mathf.Lerp(1f, 1.5f, fill);
+                float freq = 4f + fill * 22f;
                 _overloadShakePhase += Time.deltaTime * freq;
                 float shakeAmount = _overloadShakeAmount * (0.7f + fill * 0.5f);
                 float popScale = GetClickPopScale();
+                float pulseScale = 1f + 0.22f * (0.5f + 0.5f * Mathf.Sin(_overloadShakePhase));
                 if (stationType == ShapeType.Circle)
                 {
                     float vy = Mathf.Sin(_overloadShakePhase) * _overloadShakeAmountVertical * (0.8f + fill * 0.6f);
                     visual.localRotation = Quaternion.identity;
                     visual.localPosition = new Vector3(0, vy, visual.localPosition.z);
-                    visual.localScale = Vector3.one * (baseScale * scaleFactor * popScale);
+                    visual.localScale = Vector3.one * (baseScale * pulseScale * popScale);
                 }
                 else
                 {
                     float shake = Mathf.Sin(_overloadShakePhase) * shakeAmount;
                     visual.localRotation = Quaternion.Euler(0, 0, shake);
                     visual.localPosition = new Vector3(0, 0, visual.localPosition.z);
-                    visual.localScale = Vector3.one * (baseScale * scaleFactor * popScale);
+                    visual.localScale = Vector3.one * (baseScale * pulseScale * popScale);
                 }
+                _visualRenderer.color = Color.Lerp(Color.white, new Color(0.75f, 0.35f, 0.35f), fill);
             }
             else
             {
                 _overloadShakePhase = 0f;
-                visual.localRotation = Quaternion.identity;
+                if (!_highlighted)
+                    _visualRenderer.color = isUnlocked ? Color.white : new Color(1f, 1f, 1f, 0.5f);
+                float shake = GetClickPopShake();
+                visual.localRotation = Quaternion.Euler(0, 0, shake);
                 visual.localPosition = new Vector3(0, 0, visual.localPosition.z);
                 visual.localScale = Vector3.one * (baseScale * GetClickPopScale());
             }

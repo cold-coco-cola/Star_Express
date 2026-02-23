@@ -539,7 +539,12 @@ public class ShipBehaviour : MonoBehaviour
         var lm = GameManager.Instance != null ? GameManager.Instance.GetLineManagerComponent() : null;
         var allLines = lm != null ? lm.Lines : null;
 
-        var result = PassengerTransportLogic.ComputeDockingActions(station, this, allLines);
+        // 载客/换乘需用「离站后的前进方向」：端点的 _arrivalDirection 指向来向，离站时会掉头，需修正
+        int direction = _arrivalDirection;
+        if (stationIdx == 0) direction = 1;
+        else if (stationIdx == seq.Count - 1) direction = -1;
+        if (direction == 0) direction = 1; // 防御：不应出现 0
+        var result = PassengerTransportLogic.ComputeDockingActions(station, stationIdx, this, direction, allLines);
 
         // 1. 卸客·目的地
         foreach (var p in result.ToUnloadDestination)

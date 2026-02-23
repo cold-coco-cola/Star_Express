@@ -65,7 +65,7 @@ public class GameManager : MonoBehaviour
     public bool IsPausedByUser { get; private set; }
     public int Score => score;
     public bool IsGameOver => isGameOver;
-    public float WeekDurationSeconds => gameBalance != null ? gameBalance.weekDurationSeconds : 60f;
+    public float WeekDurationSeconds => gameBalance != null ? gameBalance.weekDurationSeconds : 90f;
     /// <summary>距离下周的剩余秒数。</summary>
     public float WeekTimerRemaining => Mathf.Max(0, WeekDurationSeconds - weekTimer);
 
