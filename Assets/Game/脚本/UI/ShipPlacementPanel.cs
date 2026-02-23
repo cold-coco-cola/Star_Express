@@ -344,7 +344,7 @@ public class ShipPlacementPanel : BasePanel
         le.flexibleWidth = 1;
         var txt = _emptyHintGo.AddComponent<Text>();
         txt.text = "暂无航线";
-        txt.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        txt.font = GameUIFonts.Default;
         txt.fontSize = 14;
         txt.alignment = TextAnchor.MiddleCenter;
         txt.color = new Color(0.7f, 0.7f, 0.7f, 0.9f);

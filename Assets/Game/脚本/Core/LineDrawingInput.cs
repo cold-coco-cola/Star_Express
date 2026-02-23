@@ -71,6 +71,7 @@ public class LineDrawingInput : MonoBehaviour
             if (station != null && station.isUnlocked)
             {
                 _selectedA = station;
+                station.PlayClickPop();
                 SetHighlight(_selectedA, true);
                 _state = State.FirstSelected;
                 if (debugLog) Debug.Log("[连线输入] 已选中: " + station.displayName);
@@ -87,6 +88,7 @@ public class LineDrawingInput : MonoBehaviour
             }
             if (station.isUnlocked)
             {
+                station.PlayClickPop();
                 if (_colorPickPanel == null)
                     TryResolveReferences();
                 if (_colorPickPanel != null)

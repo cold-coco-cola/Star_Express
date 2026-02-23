@@ -114,6 +114,41 @@ public class LineManager : MonoBehaviour, ILineManager
         return false;
     }
 
+    /// <summary>将新站插入到指定线段的指定进度处，成为线上站。会更新该线上飞船的 segment 与 progress。</summary>
+    public void InsertStationIntoSegment(Line line, int segmentIndex, StationBehaviour newStation, float insertProgress)
+    {
+        if (line == null || newStation == null) return;
+        var seq = line.stationSequence;
+        if (seq == null || segmentIndex < 0 || segmentIndex + 1 >= seq.Count) return;
+        insertProgress = Mathf.Clamp01(insertProgress);
+
+        seq.Insert(segmentIndex + 1, newStation);
+
+        foreach (var ship in line.ships)
+        {
+            if (ship == null) continue;
+            if (ship.currentSegmentIndex < segmentIndex) continue;
+            if (ship.currentSegmentIndex > segmentIndex)
+            {
+                ship.currentSegmentIndex++;
+                continue;
+            }
+            float t = ship.progressOnSegment;
+            if (t <= insertProgress)
+            {
+                ship.progressOnSegment = insertProgress > 0.0001f ? t / insertProgress : 0f;
+            }
+            else
+            {
+                ship.currentSegmentIndex = segmentIndex + 1;
+                float span = 1f - insertProgress;
+                ship.progressOnSegment = span > 0.0001f ? (t - insertProgress) / span : 1f;
+            }
+        }
+
+        RefreshAllLinesSharingSegmentsWith(line);
+    }
+
     public void AddShipStock(int amount) { _shipStock += amount; }
 
     /// <summary>周奖励「新线路」：增加线路数量上限 1，最多 6 条。</summary>

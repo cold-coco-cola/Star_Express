@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using UnityEngine;
 
 /// <summary>
@@ -59,6 +60,15 @@ public class GameplayUIController : MonoBehaviour
     private void OnGameOver(StationBehaviour failedStation)
     {
         TryTransition(GameplayUIState.GameOver);
+        StartCoroutine(DelayedShowGameOverPopup(failedStation));
+    }
+
+    private IEnumerator DelayedShowGameOverPopup(StationBehaviour failedStation)
+    {
+        var cam = FindObjectOfType<GameCamera>();
+        float duration = cam != null ? cam.gameOverFocusDuration : 1.8f;
+        yield return new WaitForSeconds(duration);
+
         var popup = UIManager.Get<GameOverPopup>();
         if (popup != null)
         {

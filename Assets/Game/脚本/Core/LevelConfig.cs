@@ -39,6 +39,8 @@ public class LevelConfig : ScriptableObject
     public float spawnDistanceMin = 1.5f;
     [Tooltip("新站生成：距最近站点的最大距离（世界单位）")]
     public float spawnDistanceMax = 3.5f;
+    [Tooltip("距线路过近时吸附为线上站：距离阈值（世界单位），0 表示不吸附")]
+    public float spawnSnapToLineThreshold = 0.8f;
     [Tooltip("每周中段生成时间：周进度百分比下限，如 0.4 表示 40%")]
     [Range(0.2f, 0.8f)] public float spawnMidWeekTimeMin = 0.4f;
     [Tooltip("每周中段生成时间：周进度百分比上限，如 0.7 表示 70%")]

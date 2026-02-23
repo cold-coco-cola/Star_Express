@@ -9,8 +9,8 @@ using UnityEngine.EventSystems;
 [RequireComponent(typeof(Button))]
 public class ButtonClickAnim : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IPointerExitHandler
 {
-    [SerializeField] private float _pressScale = 0.92f;
-    [SerializeField] private float _animDuration = 0.08f;
+    [SerializeField] private float _pressScale = 0.88f;
+    [SerializeField] private float _animDuration = 0.1f;
 
     private RectTransform _rect;
     private Vector3 _normalScale;

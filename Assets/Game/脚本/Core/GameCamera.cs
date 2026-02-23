@@ -24,11 +24,22 @@ public class GameCamera : MonoBehaviour
     [Tooltip("缩放平滑速度")]
     public float zoomSmoothSpeed = 12f;
 
+    [Header("游戏失败聚焦")]
+    [Tooltip("聚焦到失败站点的动画时长")]
+    public float gameOverFocusDuration = 1.8f;
+    [Tooltip("聚焦时的目标正交尺寸（放大）")]
+    public float gameOverFocusOrtho = 3.5f;
+
     private Camera _cam;
     private Vector3 _targetPosition;
     private float _targetOrthoSize;
     private float _baseMaxOrthoSize; // 正常状态（视野最大）对应的 ortho，由站点边界计算
     private bool _forceFitToBounds; // 新站点生成时强制适配视野
+
+    private StationBehaviour _gameOverFocusStation;
+    private float _gameOverFocusElapsed;
+    private Vector3 _gameOverFocusStartPos;
+    private float _gameOverFocusStartOrtho;
 
     private void Awake()
     {
@@ -46,19 +57,54 @@ public class GameCamera : MonoBehaviour
     private void Start()
     {
         var gm = GameManager.Instance;
-        if (gm != null) gm.OnStationSpawned += OnStationSpawned;
+        if (gm != null)
+        {
+            gm.OnStationSpawned += OnStationSpawned;
+            gm.OnGameOver += OnGameOver;
+        }
     }
 
     private void OnDestroy()
     {
         var gm = GameManager.Instance;
-        if (gm != null) gm.OnStationSpawned -= OnStationSpawned;
+        if (gm != null)
+        {
+            gm.OnStationSpawned -= OnStationSpawned;
+            gm.OnGameOver -= OnGameOver;
+        }
+    }
+
+    private void OnGameOver(StationBehaviour failedStation)
+    {
+        _gameOverFocusStation = failedStation;
+        _gameOverFocusElapsed = 0f;
+        if (_cam != null)
+        {
+            _gameOverFocusStartPos = _cam.transform.position;
+            _gameOverFocusStartOrtho = _cam.orthographicSize;
+        }
     }
 
     private void OnStationSpawned(StationBehaviour _)
     {
         _forceFitToBounds = true;
     }
+
+    private void RunGameOverFocus()
+    {
+        if (_cam == null || _gameOverFocusStation == null) return;
+
+        _gameOverFocusElapsed += Time.deltaTime;
+        float t = Mathf.Clamp01(_gameOverFocusElapsed / gameOverFocusDuration);
+        float smoothT = 1f - (1f - t) * (1f - t) * (1f - t) * (1f - t);
+
+        Vector3 targetPos = new Vector3(_gameOverFocusStation.transform.position.x, _gameOverFocusStation.transform.position.y, _cam.transform.position.z);
+        _cam.transform.position = Vector3.Lerp(_gameOverFocusStartPos, targetPos, smoothT);
+        _cam.orthographicSize = Mathf.Lerp(_gameOverFocusStartOrtho, gameOverFocusOrtho, smoothT);
+    }
+
+    /// <summary>游戏失败聚焦动画是否已完成（供 Popup 延迟显示）。</summary>
+    public bool IsGameOverFocusComplete => _gameOverFocusStation != null && _gameOverFocusElapsed >= gameOverFocusDuration;
 
     private void EnsureBackgroundFollow()
     {
@@ -72,7 +118,12 @@ public class GameCamera : MonoBehaviour
     {
         if (_cam == null) return;
         var gm = GameManager.Instance;
-        if (gm == null || gm.IsGameOver) return;
+        if (gm == null) return;
+        if (gm.IsGameOver)
+        {
+            RunGameOverFocus();
+            return;
+        }
 
         ComputeTargetBounds(gm.GetAllStations());
         HandleScrollZoom();

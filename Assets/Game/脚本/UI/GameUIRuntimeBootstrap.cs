@@ -258,7 +258,7 @@ public class GameUIRuntimeBootstrap : MonoBehaviour
         lr.offsetMin = lr.offsetMax = Vector2.zero;
         var txt = labelGo.AddComponent<Text>();
         txt.text = label;
-        txt.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        txt.font = GameUIFonts.Default;
         txt.fontSize = 18;
         txt.alignment = TextAnchor.MiddleCenter;
         txt.color = Color.white;
@@ -283,7 +283,7 @@ public class GameUIRuntimeBootstrap : MonoBehaviour
         r.sizeDelta = size;
         var t = go.AddComponent<Text>();
         t.text = content;
-        t.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        t.font = GameUIFonts.Default;
         t.fontSize = fontSize;
         t.alignment = TextAnchor.MiddleCenter;
         t.color = Color.white;
@@ -309,7 +309,7 @@ public class GameUIRuntimeBootstrap : MonoBehaviour
         lr.offsetMin = lr.offsetMax = Vector2.zero;
         var txt = labelGo.AddComponent<Text>();
         txt.text = label;
-        txt.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        txt.font = GameUIFonts.Default;
         txt.fontSize = 18;
         txt.alignment = TextAnchor.MiddleCenter;
         txt.color = Color.white;

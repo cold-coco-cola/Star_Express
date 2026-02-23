@@ -14,36 +14,13 @@ public class GameOverPopup : BasePanel
     public Button retryButton;
     public Button backButton;
 
-    private void Awake()
-    {
-        var gm = GameManager.Instance;
-        if (gm != null)
-            gm.OnGameOver += OnGameOver;
-    }
-
     private void Start()
     {
         if (retryButton != null) retryButton.onClick.AddListener(OnRetry);
         if (backButton != null) backButton.onClick.AddListener(OnBack);
     }
 
-    protected override void OnDestroy()
-    {
-        var gm = GameManager.Instance;
-        if (gm != null)
-            gm.OnGameOver -= OnGameOver;
-        base.OnDestroy();
-    }
-
-    private void OnGameOver(StationBehaviour failedStation)
-    {
-        RefreshScore();
-        if (reasonText != null)
-            reasonText.text = failedStation != null ? $"站点「{failedStation.displayName}」拥挤超阈值" : "游戏结束";
-        Show();
-    }
-
-    /// <summary>由 GameplayUIController 直接调用，确保得分正确显示。</summary>
+    /// <summary>由 GameplayUIController 在相机聚焦动画完成后调用，确保得分与失败原因正确显示。</summary>
     public void ShowWithScore(int score, StationBehaviour failedStation)
     {
         if (scoreText != null) scoreText.text = "得分: " + score;

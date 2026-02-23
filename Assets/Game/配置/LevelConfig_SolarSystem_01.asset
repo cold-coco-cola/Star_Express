@@ -66,6 +66,7 @@ MonoBehaviour:
   startStationCount: 3
   spawnDistanceMin: 1.5
   spawnDistanceMax: 3.5
+  spawnSnapToLineThreshold: 0.8
   spawnMidWeekTimeMin: 0.4
   spawnMidWeekTimeMax: 0.7
   spawnTemplateIds:

@@ -62,14 +62,14 @@ public class ColorPickPanel : BasePanel
         var rect = panelRoot != null ? panelRoot.GetComponent<RectTransform>() : null;
         if (rect != null)
         {
-            rect.sizeDelta = maxCount <= 3 ? new Vector2(240, 120) : new Vector2(320, 180);
+            rect.sizeDelta = maxCount <= 3 ? new Vector2(360, 160) : new Vector2(420, 220);
         }
 
         if (buttonCancel != null)
         {
             var cr = buttonCancel.GetComponent<RectTransform>();
             if (cr != null)
-                cr.anchoredPosition = new Vector2(0, maxCount <= 3 ? -45 : -75);
+                cr.anchoredPosition = new Vector2(0, maxCount <= 3 ? -55 : -90);
         }
     }
 

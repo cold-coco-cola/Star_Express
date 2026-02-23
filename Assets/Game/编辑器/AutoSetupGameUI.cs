@@ -170,6 +170,20 @@ public static class AutoSetupGameUI
         x += w + gap;
         var starTunnel = MakeText(panel.transform, "StarTunnelCountText", "星隧: 0", new Vector2(x, 0), new Vector2(w, h));
 
+        var scoreTimeBox = MakeRect(panel.transform, "ScoreTimeBox");
+        scoreTimeBox.transform.SetAsFirstSibling();
+        var stbr = scoreTimeBox.GetComponent<RectTransform>();
+        stbr.anchorMin = stbr.anchorMax = new Vector2(1f, 1f);
+        stbr.pivot = new Vector2(1f, 1f);
+        stbr.anchoredPosition = new Vector2(-12f, -12f);
+        stbr.sizeDelta = new Vector2(170f, 56f);
+        var stbImg = scoreTimeBox.AddComponent<Image>();
+        stbImg.color = new Color(0.06f, 0.08f, 0.12f, 0.92f);
+        stbImg.raycastTarget = false;
+        var stbOutline = scoreTimeBox.AddComponent<Outline>();
+        stbOutline.effectColor = new Color(0.2f, 0.25f, 0.35f, 0.5f);
+        stbOutline.effectDistance = new Vector2(-1f, 1f);
+
         var score = MakeTextTopRight(panel.transform, "ScoreText", "得分: 0", -16f, new Vector2(140, 24));
         var weekCount = MakeTextTopRight(panel.transform, "WeekCountdownText", "下周: 1:00", -44f, new Vector2(120, 24));
         score.fontSize = 18;
@@ -196,7 +210,7 @@ public static class AutoSetupGameUI
         r.sizeDelta = size;
         var t = go.AddComponent<Text>();
         t.text = content;
-        t.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        t.font = GameUIFonts.Default;
         t.fontSize = 18;
         t.color = Color.white;
         return t;
@@ -212,7 +226,7 @@ public static class AutoSetupGameUI
         r.sizeDelta = size;
         var t = go.AddComponent<Text>();
         t.text = content;
-        t.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        t.font = GameUIFonts.Default;
         t.fontSize = 18;
         t.color = Color.white;
         return t;
@@ -309,7 +323,7 @@ public static class AutoSetupGameUI
         nr.anchoredPosition = new Vector2(circleSize + spacing, 0);
         nr.sizeDelta = new Vector2(countWidth, circleSize * 0.7f);
         var txt = count.AddComponent<Text>();
-        txt.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        txt.font = GameUIFonts.Default;
         txt.fontSize = 22;
         txt.alignment = TextAnchor.MiddleCenter;
         txt.color = Color.white;
@@ -391,7 +405,7 @@ public static class AutoSetupGameUI
         nr.anchoredPosition = new Vector2(circleSize + spacing, 0);
         nr.sizeDelta = new Vector2(countWidth, circleSize * 0.7f);
         var txt = count.AddComponent<Text>();
-        txt.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        txt.font = GameUIFonts.Default;
         txt.fontSize = 22;
         txt.alignment = TextAnchor.MiddleCenter;
         txt.color = Color.white;
@@ -446,7 +460,7 @@ public static class AutoSetupGameUI
         nr.anchoredPosition = new Vector2(circleSize + spacing, 0);
         nr.sizeDelta = new Vector2(countWidth, circleSize * 0.7f);
         var txt = count.AddComponent<Text>();
-        txt.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        txt.font = GameUIFonts.Default;
         txt.fontSize = 22;
         txt.alignment = TextAnchor.MiddleCenter;
         txt.color = Color.white;
@@ -482,21 +496,22 @@ public static class AutoSetupGameUI
         var panel = MakeRect(parent, "ColorPickPanel");
         var pr = panel.GetComponent<RectTransform>();
         pr.anchorMin = pr.anchorMax = new Vector2(0.5f, 0.5f);
-        pr.sizeDelta = new Vector2(320, 180);
+        pr.sizeDelta = new Vector2(420, 220);
         pr.anchoredPosition = Vector2.zero;
         var bg = panel.AddComponent<Image>();
         bg.color = new Color(0.08f, 0.1f, 0.14f, 0.97f);
         bg.raycastTarget = true;
 
-        const float bw = 56f, gap = 12f;
-        float row1Y = 25f, row2Y = -25f, cancelY = -70f;
-        var btnR = MakeButton(panel.transform, "Button_红", "红", Color.red, new Vector2(-bw - gap, row1Y));
-        var btnG = MakeButton(panel.transform, "Button_绿", "绿", Color.green, new Vector2(0, row1Y));
-        var btnB = MakeButton(panel.transform, "Button_蓝", "蓝", Color.blue, new Vector2(bw + gap, row1Y));
-        var btnY = MakeButton(panel.transform, "Button_黄", "黄", Color.yellow, new Vector2(-bw - gap, row2Y));
-        var btnCy = MakeButton(panel.transform, "Button_青", "青", Color.cyan, new Vector2(0, row2Y));
-        var btnM = MakeButton(panel.transform, "Button_品", "品", Color.magenta, new Vector2(bw + gap, row2Y));
-        var btnC = MakeButton(panel.transform, "Button_取消", "取消", new Color(0.5f, 0.5f, 0.5f), new Vector2(0, cancelY));
+        const float bw = 72f, gap = 16f;
+        float row1Y = 28f, row2Y = -28f, cancelY = -78f;
+        var btnSize = new Vector2(bw, 48f);
+        var btnR = MakeButton(panel.transform, "Button_红", "红", Color.red, new Vector2(-bw - gap, row1Y), btnSize);
+        var btnG = MakeButton(panel.transform, "Button_绿", "绿", Color.green, new Vector2(0, row1Y), btnSize);
+        var btnB = MakeButton(panel.transform, "Button_蓝", "蓝", Color.blue, new Vector2(bw + gap, row1Y), btnSize);
+        var btnY = MakeButton(panel.transform, "Button_黄", "黄", Color.yellow, new Vector2(-bw - gap, row2Y), btnSize);
+        var btnCy = MakeButton(panel.transform, "Button_青", "青", Color.cyan, new Vector2(0, row2Y), btnSize);
+        var btnM = MakeButton(panel.transform, "Button_品", "品", Color.magenta, new Vector2(bw + gap, row2Y), btnSize);
+        var btnC = MakeButton(panel.transform, "Button_取消", "取消", new Color(0.5f, 0.5f, 0.5f), new Vector2(0, cancelY), new Vector2(100, 40));
         AddButtonClickAnim(btnR, btnG, btnB, btnY, btnCy, btnM, btnC);
 
         var comp = panel.AddComponent<ColorPickPanel>();
@@ -605,10 +620,12 @@ public static class AutoSetupGameUI
             RepositionColorPickButtons(panel);
             return;
         }
-        const float bw = 56f, gap = 12f;
-        var btnY = MakeButton(panel.transform, "Button_黄", "黄", Color.yellow, new Vector2(-bw - gap, -25));
-        var btnCy = MakeButton(panel.transform, "Button_青", "青", Color.cyan, new Vector2(0, -25));
-        var btnM = MakeButton(panel.transform, "Button_品", "品", Color.magenta, new Vector2(bw + gap, -25));
+        const float bw = 72f, gap = 16f;
+        var btnSize = new Vector2(bw, 48f);
+        var btnY = MakeButton(panel.transform, "Button_黄", "黄", Color.yellow, new Vector2(-bw - gap, -35), btnSize);
+        var btnCy = MakeButton(panel.transform, "Button_青", "青", Color.cyan, new Vector2(0, -35), btnSize);
+        var btnM = MakeButton(panel.transform, "Button_品", "品", Color.magenta, new Vector2(bw + gap, -35), btnSize);
+        AddButtonClickAnim(btnY, btnCy, btnM);
         RepositionColorPickButtons(panel);
         var comp = panel.GetComponent<ColorPickPanel>();
         if (comp != null)
@@ -624,8 +641,8 @@ public static class AutoSetupGameUI
     /// <summary>统一重排选色面板按钮位置，保证 3 色/6 色布局整齐不重叠。</summary>
     private static void RepositionColorPickButtons(Transform panel)
     {
-        const float bw = 56f, gap = 12f;
-        float row1Y = 25f, row2Y = -25f, cancelY = -70f;
+        const float bw = 72f, gap = 16f;
+        float row1Y = 35f, row2Y = -35f, cancelY = -90f;
         var posMap = new System.Collections.Generic.Dictionary<string, Vector2>
         {
             { "Button_红", new Vector2(-bw - gap, row1Y) },
@@ -783,11 +800,11 @@ public static class AutoSetupGameUI
         return true;
     }
 
-    private static Button MakeButton(Transform parent, string name, string label, Color color, Vector2 pos)
+    private static Button MakeButton(Transform parent, string name, string label, Color color, Vector2 pos, Vector2? size = null)
     {
         var go = MakeRect(parent, name);
         var r = go.GetComponent<RectTransform>();
-        r.sizeDelta = new Vector2(64, 36);
+        r.sizeDelta = size ?? new Vector2(64, 36);
         r.anchoredPosition = pos;
         var img = go.AddComponent<Image>();
         img.color = color;
@@ -800,7 +817,7 @@ public static class AutoSetupGameUI
         tr.offsetMin = tr.offsetMax = Vector2.zero;
         var t = tGo.AddComponent<Text>();
         t.text = label;
-        t.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        t.font = GameUIFonts.Default;
         t.fontSize = 18;
         t.alignment = TextAnchor.MiddleCenter;
         t.color = Color.white;

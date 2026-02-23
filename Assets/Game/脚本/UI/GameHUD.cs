@@ -27,6 +27,8 @@ public class GameHUD : BasePanel
         if (scoreText == null) scoreText = FindChildTextInCanvas("ScoreText");
 
         transform.SetAsLastSibling();
+        EnsureScoreTimeBox();
+        ApplyDefaultFont();
         var gm = GameManager.Instance;
         if (gm != null)
         {
@@ -113,6 +115,43 @@ public class GameHUD : BasePanel
         var canvas = UnityEngine.Object.FindObjectOfType<Canvas>();
         if (canvas == null) return null;
         return FindChildText(canvas.transform, name);
+    }
+
+    private void EnsureScoreTimeBox()
+    {
+        if (scoreText == null && weekCountdownText == null) return;
+        var existing = transform.Find("ScoreTimeBox");
+        if (existing != null) return;
+
+        var box = new GameObject("ScoreTimeBox");
+        box.transform.SetParent(transform, false);
+        box.transform.SetAsFirstSibling();
+
+        var rt = box.AddComponent<RectTransform>();
+        rt.anchorMin = new Vector2(1f, 1f);
+        rt.anchorMax = new Vector2(1f, 1f);
+        rt.pivot = new Vector2(1f, 1f);
+        rt.anchoredPosition = new Vector2(-12f, -12f);
+        rt.sizeDelta = new Vector2(170f, 56f);
+
+        var img = box.AddComponent<UnityEngine.UI.Image>();
+        img.color = new Color(0.06f, 0.08f, 0.12f, 0.92f);
+        img.raycastTarget = false;
+
+        var outline = box.AddComponent<UnityEngine.UI.Outline>();
+        outline.effectColor = new Color(0.2f, 0.25f, 0.35f, 0.5f);
+        outline.effectDistance = new Vector2(-1f, 1f);
+    }
+
+    private void ApplyDefaultFont()
+    {
+        var font = GameUIFonts.Default;
+        if (font == null) return;
+        if (scoreText != null) scoreText.font = font;
+        if (shipCountText != null) shipCountText.font = font;
+        if (carriageCountText != null) carriageCountText.font = font;
+        if (starTunnelCountText != null) starTunnelCountText.font = font;
+        if (weekCountdownText != null) weekCountdownText.font = font;
     }
 
 }
