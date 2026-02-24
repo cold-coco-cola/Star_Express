@@ -80,6 +80,8 @@ namespace Game.Scripts.UI
         {
             // 若已有 LevelSelectCanvas 则跳过（避免重复）
             if (GameObject.Find("LevelSelectCanvas") != null) return;
+            // 若存在 LevelSelectBuilder，由其负责构建（支持编辑模式预构建）
+            if (GetComponent<LevelSelectBuilder>() != null) return;
 
             var canvasObj = new GameObject("LevelSelectCanvas");
             var canvas = canvasObj.AddComponent<Canvas>();

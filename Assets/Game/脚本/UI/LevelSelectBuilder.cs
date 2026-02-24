@@ -4,12 +4,12 @@ using System.Linq;
 
 namespace Game.Scripts.UI
 {
-    /// <summary>关卡选择界面 UI 构建器。挂到空物体上，场景加载时自动构建。</summary>
+    /// <summary>关卡选择界面 UI 构建器。编辑模式与运行时自动构建，打开场景即可见。</summary>
+    [ExecuteAlways]
     public class LevelSelectBuilder : MonoBehaviour
     {
         public MainMenuStyle style;
 
-        [ContextMenu("Build Level Select UI")]
         public void BuildUI()
         {
 #if UNITY_EDITOR
@@ -214,7 +214,7 @@ namespace Game.Scripts.UI
             return font;
         }
 
-        private void Awake()
+        private void OnEnable()
         {
             if (transform.childCount == 0)
                 BuildUI();

@@ -9,9 +9,9 @@ namespace Game.Scripts.UI
     public class MenuAudio : MonoBehaviour
     {
         [Header("音效")]
-        [Tooltip("鼠标悬停时播放，留空则加载 音乐/start_menu_hover")]
+        [Tooltip("鼠标悬停时播放，留空则加载 音乐/Menu Sounds/start_menu_hover")]
         public AudioClip hoverClip;
-        [Tooltip("点击时播放，留空则加载 音乐/start_menu_click")]
+        [Tooltip("点击时播放，留空则加载 音乐/Menu Sounds/start_menu_click")]
         public AudioClip clickClip;
 
         [Header("音量")]
@@ -25,8 +25,8 @@ namespace Game.Scripts.UI
             _source = GetComponent<AudioSource>();
             _source.playOnAwake = false;
             _source.loop = false;
-            if (hoverClip == null) hoverClip = Resources.Load<AudioClip>("音乐/start_menu_hover");
-            if (clickClip == null) clickClip = Resources.Load<AudioClip>("音乐/start_menu_click");
+            if (hoverClip == null) hoverClip = Resources.Load<AudioClip>("音乐/Menu Sounds/start_menu_hover");
+            if (clickClip == null) clickClip = Resources.Load<AudioClip>("音乐/Menu Sounds/start_menu_click");
         }
 
         public void PlayHover()
