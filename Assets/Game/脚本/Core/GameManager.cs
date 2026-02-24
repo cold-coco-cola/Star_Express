@@ -94,7 +94,6 @@ public class GameManager : MonoBehaviour
         EnsureComponent<GameplayUIController>();
         EnsureComponent<CarriagePlacementInput>();
         EnsureComponent<StationSpawner>();
-        EnsureComponent<BackgroundMusic>();
         // PRD §3.1：周 0 持续 60 秒后首次发放，开局不发放。不在此处添加飞船。
     }
 

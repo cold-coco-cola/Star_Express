@@ -28,7 +28,21 @@ public static class AutoSetupGameUI
     private static void CheckAndSetup()
     {
         if (Application.isPlaying) return;
-        if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().rootCount == 0) return;
+        var scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+        if (scene.rootCount == 0) return;
+
+        // 菜单/关卡选择场景不注入游戏 UI
+        string path = scene.path ?? "";
+        string name = scene.name ?? "";
+        if (path.IndexOf("StartMenu", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
+            path.IndexOf("MainMenu", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
+            path.IndexOf("LevelSelect", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
+            name.IndexOf("StartMenu", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
+            name.IndexOf("MainMenu", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
+            name.IndexOf("LevelSelect", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
+            Object.FindObjectOfType<Game.Scripts.UI.MainMenuBuilder>() != null ||
+            Object.FindObjectOfType<Game.Scripts.UI.LevelSelectController>() != null)
+            return;
 
         bool changed = false;
         changed |= CleanupDuplicates();

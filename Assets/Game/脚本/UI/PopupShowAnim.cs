@@ -7,8 +7,8 @@ using System.Collections;
 /// </summary>
 public class PopupShowAnim : MonoBehaviour
 {
-    [SerializeField] private float _startScale = 0.88f;
-    [SerializeField] private float _duration = 0.18f;
+        [SerializeField] private float _startScale = 0.92f;
+        [SerializeField] private float _duration = 0.28f;
 
     private RectTransform _rect;
     private Vector3 _targetScale;
@@ -27,16 +27,16 @@ public class PopupShowAnim : MonoBehaviour
         StartCoroutine(AnimateIn());
     }
 
-    private IEnumerator AnimateIn()
-    {
-        float t = 0f;
-        while (t < 1f)
+        private IEnumerator AnimateIn()
         {
-            t += Time.unscaledDeltaTime / _duration;
-            float ease = 1f - (1f - t) * (1f - t) * (1f - t);
-            _rect.localScale = _targetScale * Mathf.Lerp(_startScale, 1f, ease);
-            yield return null;
+            float t = 0f;
+            while (t < 1f)
+            {
+                t += Time.unscaledDeltaTime / _duration;
+                float ease = t * t * (3f - 2f * t);
+                _rect.localScale = _targetScale * Mathf.Lerp(_startScale, 1f, ease);
+                yield return null;
+            }
+            _rect.localScale = _targetScale;
         }
-        _rect.localScale = _targetScale;
-    }
 }

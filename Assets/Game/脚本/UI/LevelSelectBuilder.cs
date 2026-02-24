@@ -1,0 +1,223 @@
+using UnityEngine;
+using UnityEngine.UI;
+using System.Linq;
+
+namespace Game.Scripts.UI
+{
+    /// <summary>关卡选择界面 UI 构建器。挂到空物体上，场景加载时自动构建。</summary>
+    public class LevelSelectBuilder : MonoBehaviour
+    {
+        public MainMenuStyle style;
+
+        [ContextMenu("Build Level Select UI")]
+        public void BuildUI()
+        {
+#if UNITY_EDITOR
+            RemoveGameUIFromScene();
+#endif
+
+            var children = new System.Collections.Generic.List<GameObject>();
+            foreach (Transform child in transform) children.Add(child.gameObject);
+            foreach (var child in children) DestroyImmediate(child);
+
+            Canvas canvas = GetComponentInParent<Canvas>();
+            if (canvas == null)
+            {
+                var canvasObj = new GameObject("LevelSelectCanvas");
+                canvas = canvasObj.AddComponent<Canvas>();
+                canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+                canvas.sortingOrder = 100;
+                var scaler = canvasObj.AddComponent<CanvasScaler>();
+                scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+                scaler.referenceResolution = new Vector2(1920, 1080);
+                canvasObj.AddComponent<GraphicRaycaster>();
+                transform.SetParent(canvasObj.transform, false);
+
+                if (FindObjectOfType<UnityEngine.EventSystems.EventSystem>() == null)
+                {
+                    var es = new GameObject("EventSystem");
+                    es.AddComponent<UnityEngine.EventSystems.EventSystem>();
+                    es.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
+                }
+            }
+
+            EnsureMainCamera();
+            CreateBackground();
+            CreateTitle();
+            CreateLevelButtons();
+            CreateBackButton();
+            EnsureController();
+        }
+
+        private void CreateBackground()
+        {
+            var go = new GameObject("Background");
+            go.transform.SetParent(transform, false);
+            var img = go.AddComponent<Image>();
+            img.color = style != null ? style.backgroundColor : new Color(0.05f, 0.05f, 0.1f, 1f);
+            var rt = img.rectTransform;
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = rt.offsetMax = Vector2.zero;
+        }
+
+        private void CreateTitle()
+        {
+            var go = new GameObject("Title");
+            go.transform.SetParent(transform, false);
+            var t = go.AddComponent<Text>();
+            t.text = "选择关卡";
+            t.font = GetFont();
+            t.fontSize = 64;
+            t.alignment = TextAnchor.MiddleCenter;
+            t.color = style != null ? style.textColor : Color.white;
+
+            var rt = go.GetComponent<RectTransform>();
+            rt.anchorMin = new Vector2(0.5f, 1f);
+            rt.anchorMax = new Vector2(0.5f, 1f);
+            rt.pivot = new Vector2(0.5f, 1f);
+            rt.anchoredPosition = new Vector2(0, -80);
+            rt.sizeDelta = new Vector2(400, 80);
+        }
+
+        private void CreateLevelButtons()
+        {
+            var controller = GetComponent<LevelSelectController>();
+            if (controller == null) controller = gameObject.AddComponent<LevelSelectController>();
+
+            var container = new GameObject("LevelContainer");
+            container.transform.SetParent(transform, false);
+            var vlg = container.AddComponent<VerticalLayoutGroup>();
+            vlg.spacing = 24;
+            vlg.childAlignment = TextAnchor.MiddleCenter;
+            vlg.childControlHeight = vlg.childControlWidth = false;
+            vlg.childForceExpandHeight = vlg.childForceExpandWidth = false;
+
+            var rt = container.GetComponent<RectTransform>();
+            rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.anchoredPosition = Vector2.zero;
+            rt.sizeDelta = new Vector2(480, 400);
+
+            controller.levelContainer = container;
+
+            var entries = controller.levels;
+            if (entries == null || entries.Length == 0)
+                entries = new LevelSelectController.LevelEntry[] { new LevelSelectController.LevelEntry { displayName = "第一关 太阳系", sceneName = "SolarSystem_01" } };
+
+            for (int i = 0; i < entries.Length; i++)
+            {
+                CreateLevelButton(container.transform, i, entries[i].displayName);
+            }
+        }
+
+        private void CreateLevelButton(Transform parent, int index, string text)
+        {
+            var go = new GameObject($"Level_{index}_Button");
+            go.transform.SetParent(parent, false);
+            var img = go.AddComponent<Image>();
+            img.color = new Color(0.15f, 0.2f, 0.3f, 0.9f);
+
+            var btn = go.AddComponent<Button>();
+            var colors = btn.colors;
+            colors.highlightedColor = new Color(0.25f, 0.35f, 0.5f, 1f);
+            btn.colors = colors;
+
+            var textGo = new GameObject("Text");
+            textGo.transform.SetParent(go.transform, false);
+            var t = textGo.AddComponent<Text>();
+            t.text = text;
+            t.font = GetFont();
+            t.fontSize = style != null ? style.fontSize : 32;
+            t.color = style != null ? style.textColor : Color.white;
+            t.alignment = TextAnchor.MiddleCenter;
+            t.horizontalOverflow = HorizontalWrapMode.Overflow;
+            t.verticalOverflow = VerticalWrapMode.Truncate;
+
+            var btnRt = go.GetComponent<RectTransform>();
+            btnRt.sizeDelta = new Vector2(400, 72);
+
+            var textRt = textGo.GetComponent<RectTransform>();
+            textRt.anchorMin = Vector2.zero;
+            textRt.anchorMax = Vector2.one;
+            textRt.offsetMin = new Vector2(24, 0);
+            textRt.offsetMax = new Vector2(-24, 0);
+        }
+
+        private void CreateBackButton()
+        {
+            var go = new GameObject("BackButton");
+            go.transform.SetParent(transform, false);
+            var img = go.AddComponent<Image>();
+            img.color = new Color(0, 0, 0, 0.01f);
+
+            var btn = go.AddComponent<Button>();
+
+            var textGo = new GameObject("Text");
+            textGo.transform.SetParent(go.transform, false);
+            var t = textGo.AddComponent<Text>();
+            t.text = "返回";
+            t.font = GetFont();
+            t.fontSize = 28;
+            t.color = style != null ? style.textColor : Color.white;
+            t.alignment = TextAnchor.MiddleCenter;
+
+            var rt = go.GetComponent<RectTransform>();
+            rt.anchorMin = new Vector2(0, 0);
+            rt.anchorMax = new Vector2(0, 0);
+            rt.pivot = new Vector2(0, 0);
+            rt.anchoredPosition = new Vector2(120, 80);
+            rt.sizeDelta = new Vector2(160, 48);
+
+            var textRt = textGo.GetComponent<RectTransform>();
+            textRt.anchorMin = Vector2.zero;
+            textRt.anchorMax = Vector2.one;
+            textRt.offsetMin = textRt.offsetMax = Vector2.zero;
+        }
+
+        private void EnsureController()
+        {
+            if (GetComponent<LevelSelectController>() == null)
+                gameObject.AddComponent<LevelSelectController>();
+        }
+
+        private void EnsureMainCamera()
+        {
+            var cam = FindObjectOfType<Camera>();
+            if (cam != null && cam.CompareTag("MainCamera")) return;
+            if (cam != null) { cam.tag = "MainCamera"; return; }
+
+            var camObj = new GameObject("Main Camera");
+            cam = camObj.AddComponent<Camera>();
+            cam.tag = "MainCamera";
+            cam.clearFlags = CameraClearFlags.SolidColor;
+            cam.backgroundColor = new Color(0.05f, 0.05f, 0.1f, 1f);
+            cam.orthographic = true;
+            cam.orthographicSize = 5f;
+            camObj.AddComponent<AudioListener>();
+        }
+
+#if UNITY_EDITOR
+        private void RemoveGameUIFromScene()
+        {
+            var gc = GameObject.Find("GameCanvas");
+            if (gc != null) DestroyImmediate(gc);
+        }
+#endif
+
+        private Font GetFont()
+        {
+            if (style != null && style.mainFont != null) return style.mainFont;
+            var font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            if (font == null) font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            if (font == null) font = Resources.FindObjectsOfTypeAll<Font>().FirstOrDefault(f => f.name == "Arial");
+            return font;
+        }
+
+        private void Awake()
+        {
+            if (transform.childCount == 0)
+                BuildUI();
+        }
+    }
+}
