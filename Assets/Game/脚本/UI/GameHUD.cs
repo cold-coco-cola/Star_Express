@@ -19,6 +19,9 @@ public class GameHUD : BasePanel
         var topPlaceBtn = transform.Find("CarriagePlaceButton");
         if (topPlaceBtn != null) topPlaceBtn.gameObject.SetActive(false);
 
+        var scoreTimeBox = transform.Find("ScoreTimeBox");
+        if (scoreTimeBox != null) Destroy(scoreTimeBox.gameObject);
+
         if (scoreText == null) scoreText = FindChildText(transform, "ScoreText");
         if (shipCountText == null) shipCountText = FindChildText(transform, "ShipCountText");
         if (carriageCountText == null) carriageCountText = FindChildText(transform, "CarriageCountText");
@@ -26,8 +29,6 @@ public class GameHUD : BasePanel
         if (weekCountdownText == null) weekCountdownText = FindChildText(transform, "WeekCountdownText");
         if (scoreText == null) scoreText = FindChildTextInCanvas("ScoreText");
 
-        transform.SetAsLastSibling();
-        EnsureScoreTimeBox();
         ApplyDefaultFont();
         var gm = GameManager.Instance;
         if (gm != null)
@@ -115,32 +116,6 @@ public class GameHUD : BasePanel
         var canvas = UnityEngine.Object.FindObjectOfType<Canvas>();
         if (canvas == null) return null;
         return FindChildText(canvas.transform, name);
-    }
-
-    private void EnsureScoreTimeBox()
-    {
-        if (scoreText == null && weekCountdownText == null) return;
-        var existing = transform.Find("ScoreTimeBox");
-        if (existing != null) return;
-
-        var box = new GameObject("ScoreTimeBox");
-        box.transform.SetParent(transform, false);
-        box.transform.SetAsFirstSibling();
-
-        var rt = box.AddComponent<RectTransform>();
-        rt.anchorMin = new Vector2(1f, 1f);
-        rt.anchorMax = new Vector2(1f, 1f);
-        rt.pivot = new Vector2(1f, 1f);
-        rt.anchoredPosition = new Vector2(-12f, -12f);
-        rt.sizeDelta = new Vector2(170f, 56f);
-
-        var img = box.AddComponent<UnityEngine.UI.Image>();
-        img.color = new Color(0.06f, 0.08f, 0.12f, 0.92f);
-        img.raycastTarget = false;
-
-        var outline = box.AddComponent<UnityEngine.UI.Outline>();
-        outline.effectColor = new Color(0.2f, 0.25f, 0.35f, 0.5f);
-        outline.effectDistance = new Vector2(-1f, 1f);
     }
 
     private void ApplyDefaultFont()

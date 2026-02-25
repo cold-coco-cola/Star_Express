@@ -127,6 +127,7 @@ namespace Game.Scripts.UI
                 var overlayBtn = overlay.GetComponent<Button>();
                 if (overlayBtn != null)
                 {
+                    EnsureMenuButtonStyle(overlay.gameObject, isOverlay: true);
                     overlayBtn.onClick.AddListener(() => HidePanel(panelName));
                     if (audio != null) overlayBtn.onClick.AddListener(audio.PlayClick);
                 }
@@ -134,6 +135,7 @@ namespace Game.Scripts.UI
             var closeBtn = panel.Find("Box/CloseButton")?.GetComponent<Button>();
             if (closeBtn != null)
             {
+                EnsureMenuButtonStyle(closeBtn.gameObject, isOverlay: false);
                 if (isQuit)
                     closeBtn.onClick.AddListener(OnQuitConfirmed);
                 else
@@ -180,6 +182,26 @@ namespace Game.Scripts.UI
             var panel = _root.Find(panelName);
             if (panel != null)
                 panel.gameObject.SetActive(true);
+        }
+
+        /// <summary>确保按钮具有与 StartMenu 一致的 MenuButton 交互（音效+视效）。</summary>
+        private void EnsureMenuButtonStyle(GameObject buttonGo, bool isOverlay)
+        {
+            if (buttonGo.GetComponent<MenuButton>() == null)
+            {
+                var mb = buttonGo.AddComponent<MenuButton>();
+                if (isOverlay)
+                {
+                    var img = buttonGo.GetComponent<UnityEngine.UI.Image>();
+                    if (img != null) mb.normalBgColor = img.color;
+                    mb.hoverBgColor = new Color(0.15f, 0.15f, 0.18f, 0.4f);
+                    mb.scaleMultiplier = 1f;
+                }
+                else if (buttonGo.GetComponent<ButtonClickAnim>() == null)
+                {
+                    buttonGo.AddComponent<ButtonClickAnim>();
+                }
+            }
         }
 
         public void HidePanel(string panelName)

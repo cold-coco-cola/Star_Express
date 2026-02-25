@@ -16,8 +16,18 @@ public class GameOverPopup : BasePanel
 
     private void Start()
     {
-        if (retryButton != null) retryButton.onClick.AddListener(OnRetry);
-        if (backButton != null) backButton.onClick.AddListener(OnBack);
+        if (retryButton != null)
+        {
+            if (retryButton.GetComponent<GameplayButtonHoverSound>() == null)
+                retryButton.gameObject.AddComponent<GameplayButtonHoverSound>();
+            retryButton.onClick.AddListener(() => { GameplayAudio.Instance?.PlayGeneralClick(); OnRetry(); });
+        }
+        if (backButton != null)
+        {
+            if (backButton.GetComponent<GameplayButtonHoverSound>() == null)
+                backButton.gameObject.AddComponent<GameplayButtonHoverSound>();
+            backButton.onClick.AddListener(() => { GameplayAudio.Instance?.PlayGeneralClick(); OnBack(); });
+        }
     }
 
     /// <summary>由 GameplayUIController 在相机聚焦动画完成后调用，确保得分与失败原因正确显示。</summary>

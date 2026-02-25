@@ -24,6 +24,8 @@ public class ShipUpgradePanel : BasePanel
         {
             circleButton.onClick.RemoveAllListeners();
             circleButton.onClick.AddListener(OnClick);
+            if (circleButton.GetComponent<GameplayButtonHoverSound>() == null)
+                circleButton.gameObject.AddComponent<GameplayButtonHoverSound>();
             var trigger = circleButton.gameObject.GetComponent<EventTrigger>();
             if (trigger == null) trigger = circleButton.gameObject.AddComponent<EventTrigger>();
             if (trigger.triggers == null) trigger.triggers = new System.Collections.Generic.List<EventTrigger.Entry>();
@@ -80,6 +82,7 @@ public class ShipUpgradePanel : BasePanel
     private void OnClick()
     {
         if (_ignoreNextClick) { _ignoreNextClick = false; return; }
+        GameplayAudio.Instance?.PlayGeneralClick();
         TryEnterPlacingCarriage();
     }
 

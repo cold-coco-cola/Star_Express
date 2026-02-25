@@ -32,8 +32,20 @@ namespace Game.Scripts.UI
             // 隐藏游戏 UI，保持关卡选择界面纯净
             var gameCanvas = GameObject.Find("GameCanvas");
             if (gameCanvas != null) gameCanvas.SetActive(false);
+            EnsureMenuAudio();
             EnsureCamera();
             BuildUI();
+        }
+
+        private void EnsureMenuAudio()
+        {
+            var root = GetComponentInParent<Canvas>()?.gameObject ?? gameObject;
+            if (root.GetComponent<MenuAudio>() == null)
+            {
+                if (root.GetComponent<AudioSource>() == null)
+                    root.AddComponent<AudioSource>();
+                root.AddComponent<MenuAudio>();
+            }
         }
 
         private void Start()
@@ -46,18 +58,42 @@ namespace Game.Scripts.UI
         private void BindLevelButtons()
         {
             if (levels == null || levels.Length == 0) return;
+            var audio = GetComponentInParent<MenuAudio>();
             for (int i = 0; i < levelContainer.transform.childCount && i < levels.Length; i++)
             {
-                var btn = levelContainer.transform.GetChild(i).GetComponent<Button>();
+                var btnGo = levelContainer.transform.GetChild(i).gameObject;
+                var btn = btnGo.GetComponent<Button>();
                 if (btn != null)
                 {
+                    EnsureMenuButtonStyle(btnGo);
                     var sceneName = levels[i].sceneName;
+                    btn.onClick.RemoveAllListeners();
+                    if (audio != null) btn.onClick.AddListener(audio.PlayClick);
                     btn.onClick.AddListener(() => SceneManager.LoadScene(sceneName));
                 }
             }
             var backBtn = transform.Find("BackButton")?.GetComponent<Button>();
             if (backBtn != null)
+            {
+                EnsureMenuButtonStyle(backBtn.gameObject);
+                backBtn.onClick.RemoveAllListeners();
+                if (audio != null) backBtn.onClick.AddListener(audio.PlayClick);
                 backBtn.onClick.AddListener(() => SceneManager.LoadScene(backSceneName));
+            }
+        }
+
+        private void EnsureMenuButtonStyle(GameObject btnGo)
+        {
+            if (btnGo.GetComponent<MenuButton>() == null)
+            {
+                var mb = btnGo.AddComponent<MenuButton>();
+                var img = btnGo.GetComponent<Image>();
+                if (img != null) img.color = new Color(1f, 1f, 1f, 0f);
+                var t = btnGo.GetComponentInChildren<Text>();
+                if (t != null) mb.buttonText = t;
+            }
+            if (btnGo.GetComponent<ButtonClickAnim>() == null)
+                btnGo.AddComponent<ButtonClickAnim>();
         }
 
         private void EnsureCamera()
@@ -84,6 +120,8 @@ namespace Game.Scripts.UI
             if (GetComponent<LevelSelectBuilder>() != null) return;
 
             var canvasObj = new GameObject("LevelSelectCanvas");
+            if (canvasObj.GetComponent<MenuAudio>() == null)
+                canvasObj.AddComponent<MenuAudio>();
             var canvas = canvasObj.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             canvas.sortingOrder = 100;
@@ -159,11 +197,14 @@ namespace Game.Scripts.UI
             var go = new GameObject(label + "Button");
             go.transform.SetParent(parent, false);
             var img = go.AddComponent<Image>();
-            img.color = new Color(0.08f, 0.1f, 0.18f, 0.9f);
+            img.color = new Color(1f, 1f, 1f, 0f);
+
             var btn = go.AddComponent<Button>();
-            var colors = btn.colors;
-            colors.highlightedColor = new Color(0.18f, 0.22f, 0.35f, 1f);
-            btn.colors = colors;
+            btn.transition = Selectable.Transition.None;
+
+            var menuBtn = go.AddComponent<MenuButton>();
+            menuBtn.highlightColor = new Color(1f, 0.6f, 0.2f, 1f);
+            go.AddComponent<ButtonClickAnim>();
 
             var textObj = new GameObject("Text");
             textObj.transform.SetParent(go.transform, false);
@@ -172,13 +213,23 @@ namespace Game.Scripts.UI
             t.font = font;
             t.fontSize = 28;
             t.color = Color.white;
-            t.alignment = TextAnchor.MiddleCenter;
+            t.alignment = TextAnchor.MiddleLeft;
+            var shadow = textObj.AddComponent<Shadow>();
+            shadow.effectColor = new Color(0, 0, 0, 0.5f);
+            shadow.effectDistance = new Vector2(1, -1);
+
+            menuBtn.buttonText = t;
 
             var rt = go.GetComponent<RectTransform>();
             rt.sizeDelta = new Vector2(320, 56);
             var textRt = textObj.GetComponent<RectTransform>();
-            SetFullRect(textRt);
+            textRt.anchorMin = Vector2.zero;
+            textRt.anchorMax = Vector2.one;
+            textRt.offsetMin = new Vector2(20, 0);
+            textRt.offsetMax = Vector2.zero;
 
+            var audio = go.GetComponentInParent<MenuAudio>();
+            if (audio != null) btn.onClick.AddListener(audio.PlayClick);
             btn.onClick.AddListener(() => SceneManager.LoadScene(sceneName));
             return go;
         }

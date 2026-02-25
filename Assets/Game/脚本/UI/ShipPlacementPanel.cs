@@ -56,7 +56,9 @@ public class ShipPlacementPanel : BasePanel
         if (circleButton != null)
         {
             circleButton.onClick.RemoveAllListeners();
-            circleButton.onClick.AddListener(OnCircleClick);
+            circleButton.onClick.AddListener(() => { GameplayAudio.Instance?.PlayClick(); OnCircleClick(); });
+            if (circleButton.GetComponent<GameplayButtonHoverSound>() == null)
+                circleButton.gameObject.AddComponent<GameplayButtonHoverSound>();
             var img = circleButton.GetComponent<Image>();
             if (img != null) img.raycastTarget = true;
             if (circleButton.targetGraphic == null) circleButton.targetGraphic = img;
@@ -160,6 +162,7 @@ public class ShipPlacementPanel : BasePanel
     private void OnCirclePointerDown()
     {
         if (fanPanelRoot != null && fanPanelRoot.activeSelf) return;
+        GameplayAudio.Instance?.PlayClick();
         _ignoreNextClick = true;
         OpenFan();
     }
@@ -216,7 +219,8 @@ public class ShipPlacementPanel : BasePanel
         img.raycastTarget = true;
         var btn = _closeFanBlocker.AddComponent<Button>();
         btn.transition = Selectable.Transition.None;
-        btn.onClick.AddListener(CloseFan);
+        _closeFanBlocker.AddComponent<GameplayButtonHoverSound>();
+        btn.onClick.AddListener(() => { GameplayAudio.Instance?.PlayGeneralClick(); CloseFan(); });
     }
 
     public void CloseFan()
@@ -311,8 +315,13 @@ public class ShipPlacementPanel : BasePanel
             btn.targetGraphic = raw;
             btn.transition = Selectable.Transition.None; // 不覆盖 RawImage 颜色，色块才能显示红/绿/蓝
 
+            if (go.GetComponent<GameplayButtonHoverSound>() == null)
+                go.AddComponent<GameplayButtonHoverSound>();
+            if (go.GetComponent<ColorBlockHoverEffect>() == null)
+                go.AddComponent<ColorBlockHoverEffect>();
             btn.onClick.AddListener(() =>
             {
+                GameplayAudio.Instance?.PlayClick();
                 var manager = GetLineManager();
                 if (manager == null || manager.Lines == null || idx < 0 || idx >= manager.Lines.Count) return;
                 if (manager.ShipStock <= 0) return;
@@ -320,8 +329,6 @@ public class ShipPlacementPanel : BasePanel
                 CloseFan();
                 RefreshCount();
             });
-            if (btn.GetComponent<ButtonClickAnim>() == null)
-                btn.gameObject.AddComponent<ButtonClickAnim>();
 
             _lineButtons.Add(btn);
         }

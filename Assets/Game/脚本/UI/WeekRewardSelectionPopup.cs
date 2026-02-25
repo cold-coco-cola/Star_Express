@@ -26,8 +26,18 @@ public class WeekRewardSelectionPopup : BasePanel
 
     private void Start()
     {
-        if (option1Button != null) option1Button.onClick.AddListener(() => SelectAndClose(0));
-        if (option2Button != null) option2Button.onClick.AddListener(() => SelectAndClose(1));
+        if (option1Button != null)
+        {
+            if (option1Button.GetComponent<GameplayButtonHoverSound>() == null)
+                option1Button.gameObject.AddComponent<GameplayButtonHoverSound>();
+            option1Button.onClick.AddListener(() => { GameplayAudio.Instance?.PlayGeneralClick(); SelectAndClose(0); });
+        }
+        if (option2Button != null)
+        {
+            if (option2Button.GetComponent<GameplayButtonHoverSound>() == null)
+                option2Button.gameObject.AddComponent<GameplayButtonHoverSound>();
+            option2Button.onClick.AddListener(() => { GameplayAudio.Instance?.PlayGeneralClick(); SelectAndClose(1); });
+        }
         OnSelectionComplete += OnSelectionCompleteHandler;
         var gm = GameManager.Instance;
         if (gm != null) gm.OnWeekRewardSelectionRequired += ShowForWeek;

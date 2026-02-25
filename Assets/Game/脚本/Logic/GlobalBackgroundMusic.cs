@@ -3,12 +3,14 @@ using UnityEngine.SceneManagement;
 
 /// <summary>
 /// 关卡之外的全局背景音乐（主菜单、关卡选择等）。进入关卡时停止。
-/// 从 Resources/音乐/backgroundmusic 加载。
+/// 从 Resources/音乐/backgroundmusic 加载。单例，避免返回主菜单时重复播放。
 /// </summary>
 [RequireComponent(typeof(AudioSource))]
 public class GlobalBackgroundMusic : MonoBehaviour
 {
     public const string VolumePrefKey = "MusicVolume";
+
+    public static GlobalBackgroundMusic Instance { get; private set; }
 
     [Header("背景音乐")]
     [Tooltip("留空则从 Resources/音乐 加载 backgroundmusic")]
@@ -21,6 +23,13 @@ public class GlobalBackgroundMusic : MonoBehaviour
 
     private void Awake()
     {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        Instance = this;
+
         _source = GetComponent<AudioSource>();
         _source.playOnAwake = false;
         _source.loop = true;
@@ -39,6 +48,7 @@ public class GlobalBackgroundMusic : MonoBehaviour
     private void OnDestroy()
     {
         SceneManager.sceneLoaded -= OnSceneLoaded;
+        if (Instance == this) Instance = null;
     }
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)

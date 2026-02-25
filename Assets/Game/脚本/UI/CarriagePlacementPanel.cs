@@ -13,7 +13,11 @@ public class CarriagePlacementPanel : BasePanel
     private void Start()
     {
         if (cancelButton != null)
-            cancelButton.onClick.AddListener(OnCancel);
+        {
+            if (cancelButton.GetComponent<GameplayButtonHoverSound>() == null)
+                cancelButton.gameObject.AddComponent<GameplayButtonHoverSound>();
+            cancelButton.onClick.AddListener(() => { GameplayAudio.Instance?.PlayGeneralClick(); OnCancel(); });
+        }
         if (hintText == null)
         {
             var ht = transform.Find("HintText");

@@ -184,22 +184,9 @@ public static class AutoSetupGameUI
         x += w + gap;
         var starTunnel = MakeText(panel.transform, "StarTunnelCountText", "星隧: 0", new Vector2(x, 0), new Vector2(w, h));
 
-        var scoreTimeBox = MakeRect(panel.transform, "ScoreTimeBox");
-        scoreTimeBox.transform.SetAsFirstSibling();
-        var stbr = scoreTimeBox.GetComponent<RectTransform>();
-        stbr.anchorMin = stbr.anchorMax = new Vector2(1f, 1f);
-        stbr.pivot = new Vector2(1f, 1f);
-        stbr.anchoredPosition = new Vector2(-12f, -12f);
-        stbr.sizeDelta = new Vector2(170f, 56f);
-        var stbImg = scoreTimeBox.AddComponent<Image>();
-        stbImg.color = new Color(0.06f, 0.08f, 0.12f, 0.92f);
-        stbImg.raycastTarget = false;
-        var stbOutline = scoreTimeBox.AddComponent<Outline>();
-        stbOutline.effectColor = new Color(0.2f, 0.25f, 0.35f, 0.5f);
-        stbOutline.effectDistance = new Vector2(-1f, 1f);
-
-        var score = MakeTextTopRight(panel.transform, "ScoreText", "得分: 0", -16f, new Vector2(140, 24));
-        var weekCount = MakeTextTopRight(panel.transform, "WeekCountdownText", "下周: 1:00", -44f, new Vector2(120, 24));
+        const float rightPad = 80f;
+        var score = MakeTextRight(panel.transform, "ScoreText", "得分: 0", new Vector2(-rightPad - 140f, 0), new Vector2(140, 24));
+        var weekCount = MakeTextRight(panel.transform, "WeekCountdownText", "下周: 1:00", new Vector2(-rightPad - 20f, 0), new Vector2(120, 24));
         score.fontSize = 18;
         score.color = new Color(0.95f, 0.95f, 1f);
 
@@ -227,6 +214,23 @@ public static class AutoSetupGameUI
         t.font = GameUIFonts.Default;
         t.fontSize = 18;
         t.color = Color.white;
+        return t;
+    }
+
+    private static Text MakeTextRight(Transform parent, string name, string content, Vector2 pos, Vector2 size)
+    {
+        var go = MakeRect(parent, name);
+        var r = go.GetComponent<RectTransform>();
+        r.anchorMin = r.anchorMax = new Vector2(1f, 0.5f);
+        r.pivot = new Vector2(1f, 0.5f);
+        r.anchoredPosition = pos;
+        r.sizeDelta = size;
+        var t = go.AddComponent<Text>();
+        t.text = content;
+        t.font = GameUIFonts.Default;
+        t.fontSize = 18;
+        t.color = Color.white;
+        t.alignment = TextAnchor.MiddleRight;
         return t;
     }
 

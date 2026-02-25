@@ -389,6 +389,8 @@ public class StationBehaviour : MonoBehaviour
     public void PlayClickPop()
     {
         _clickPopProgress = 0f;
+        if (GameplayAudio.Instance != null)
+            GameplayAudio.Instance.PlayStationClick();
     }
 
     /// <summary>连线输入用：高亮选中站点。</summary>

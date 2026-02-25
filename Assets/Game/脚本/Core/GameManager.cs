@@ -94,6 +94,7 @@ public class GameManager : MonoBehaviour
         EnsureComponent<GameplayUIController>();
         EnsureComponent<CarriagePlacementInput>();
         EnsureComponent<StationSpawner>();
+        EnsureComponent<GameplayAudio>();
         // PRD §3.1：周 0 持续 60 秒后首次发放，开局不发放。不在此处添加飞船。
     }
 
@@ -172,6 +173,25 @@ public class GameManager : MonoBehaviour
 
     private void Update()
     {
+        if (Input.GetKeyDown(KeyCode.Escape) && !isGameOver && !_waitingWeekRewardSelection)
+        {
+            var menu = UnityEngine.Object.FindObjectOfType<PauseMenu>(true);
+            if (menu != null)
+            {
+                if (IsPausedByUser)
+                {
+                    SetUserPaused(false);
+                    menu.Hide();
+                }
+                else
+                {
+                    SetUserPaused(true);
+                    menu.Show();
+                    menu.transform.SetAsLastSibling();
+                }
+            }
+        }
+
         if (isGameOver) return;
         if (_waitingWeekRewardSelection) return;
         if (IsPausedByUser) return;

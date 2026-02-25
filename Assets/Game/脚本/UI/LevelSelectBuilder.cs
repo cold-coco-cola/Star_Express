@@ -116,12 +116,14 @@ namespace Game.Scripts.UI
             var go = new GameObject($"Level_{index}_Button");
             go.transform.SetParent(parent, false);
             var img = go.AddComponent<Image>();
-            img.color = new Color(0.15f, 0.2f, 0.3f, 0.9f);
+            img.color = new Color(1f, 1f, 1f, 0f);
 
             var btn = go.AddComponent<Button>();
-            var colors = btn.colors;
-            colors.highlightedColor = new Color(0.25f, 0.35f, 0.5f, 1f);
-            btn.colors = colors;
+            btn.transition = Selectable.Transition.None;
+
+            var menuBtn = go.AddComponent<MenuButton>();
+            if (style != null) menuBtn.highlightColor = style.highlightColor;
+            go.AddComponent<ButtonClickAnim>();
 
             var textGo = new GameObject("Text");
             textGo.transform.SetParent(go.transform, false);
@@ -130,9 +132,14 @@ namespace Game.Scripts.UI
             t.font = GetFont();
             t.fontSize = style != null ? style.fontSize : 32;
             t.color = style != null ? style.textColor : Color.white;
-            t.alignment = TextAnchor.MiddleCenter;
+            t.alignment = TextAnchor.MiddleLeft;
             t.horizontalOverflow = HorizontalWrapMode.Overflow;
             t.verticalOverflow = VerticalWrapMode.Truncate;
+            var shadow = textGo.AddComponent<Shadow>();
+            shadow.effectColor = new Color(0, 0, 0, 0.5f);
+            shadow.effectDistance = new Vector2(1, -1);
+
+            menuBtn.buttonText = t;
 
             var btnRt = go.GetComponent<RectTransform>();
             btnRt.sizeDelta = new Vector2(400, 72);
@@ -140,8 +147,8 @@ namespace Game.Scripts.UI
             var textRt = textGo.GetComponent<RectTransform>();
             textRt.anchorMin = Vector2.zero;
             textRt.anchorMax = Vector2.one;
-            textRt.offsetMin = new Vector2(24, 0);
-            textRt.offsetMax = new Vector2(-24, 0);
+            textRt.offsetMin = new Vector2(20, 0);
+            textRt.offsetMax = Vector2.zero;
         }
 
         private void CreateBackButton()
@@ -149,9 +156,14 @@ namespace Game.Scripts.UI
             var go = new GameObject("BackButton");
             go.transform.SetParent(transform, false);
             var img = go.AddComponent<Image>();
-            img.color = new Color(0, 0, 0, 0.01f);
+            img.color = new Color(1f, 1f, 1f, 0f);
 
             var btn = go.AddComponent<Button>();
+            btn.transition = Selectable.Transition.None;
+
+            var menuBtn = go.AddComponent<MenuButton>();
+            if (style != null) menuBtn.highlightColor = style.highlightColor;
+            go.AddComponent<ButtonClickAnim>();
 
             var textGo = new GameObject("Text");
             textGo.transform.SetParent(go.transform, false);
@@ -160,7 +172,12 @@ namespace Game.Scripts.UI
             t.font = GetFont();
             t.fontSize = 28;
             t.color = style != null ? style.textColor : Color.white;
-            t.alignment = TextAnchor.MiddleCenter;
+            t.alignment = TextAnchor.MiddleLeft;
+            var shadow = textGo.AddComponent<Shadow>();
+            shadow.effectColor = new Color(0, 0, 0, 0.5f);
+            shadow.effectDistance = new Vector2(1, -1);
+
+            menuBtn.buttonText = t;
 
             var rt = go.GetComponent<RectTransform>();
             rt.anchorMin = new Vector2(0, 0);
@@ -172,13 +189,16 @@ namespace Game.Scripts.UI
             var textRt = textGo.GetComponent<RectTransform>();
             textRt.anchorMin = Vector2.zero;
             textRt.anchorMax = Vector2.one;
-            textRt.offsetMin = textRt.offsetMax = Vector2.zero;
+            textRt.offsetMin = new Vector2(20, 0);
+            textRt.offsetMax = Vector2.zero;
         }
 
         private void EnsureController()
         {
             if (GetComponent<LevelSelectController>() == null)
                 gameObject.AddComponent<LevelSelectController>();
+            if (GetComponent<MenuAudio>() == null)
+                gameObject.AddComponent<MenuAudio>();
         }
 
         private void EnsureMainCamera()
