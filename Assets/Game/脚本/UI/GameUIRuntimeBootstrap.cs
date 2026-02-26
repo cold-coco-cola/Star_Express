@@ -25,7 +25,27 @@ public class GameUIRuntimeBootstrap : MonoBehaviour
         EnsureWeekRewardSelectionPopup();
         EnsureGameOverPopup();
         EnsurePauseMenu();
-        EnsurePauseButton();
+        if (IsLevelScene())
+            EnsurePauseButton();
+        else
+            HidePauseButtonInNonLevelScene();
+    }
+
+    private static void HidePauseButtonInNonLevelScene()
+    {
+        var btn = GameObject.Find("PauseButton");
+        if (btn != null) btn.SetActive(false);
+    }
+
+    private static bool IsLevelScene()
+    {
+        string sceneName = SceneManager.GetActiveScene().name;
+        string[] nonLevelScenes = { "StartMenu", "LevelSelect" };
+        foreach (var name in nonLevelScenes)
+        {
+            if (sceneName == name) return false;
+        }
+        return true;
     }
 
     private static void EnsureGameCanvas()
@@ -177,13 +197,17 @@ public class GameUIRuntimeBootstrap : MonoBehaviour
         sfxLabel.alignment = TextAnchor.MiddleLeft;
         var sfxSlider = CreateVolumeSlider(box.transform, "SFXSlider", new Vector2(0, volY2), new Vector2(volW, volH), "SFXVolume", 0.7f);
 
-        float btnY = -70, btnW = 160, btnH = 48;
-        var backBtn = CreateMenuStyleButton(box.transform, "BackToMenuButton", "返回主菜单", new Vector2(0, btnY), new Vector2(btnW, btnH));
+        float btnY = -70, btnW = 120, btnH = 48, btnGap = 20;
+        var continueBtn = CreateMenuStyleButton(box.transform, "ContinueButton", "继续", new Vector2(-btnW * 0.5f - btnGap * 0.5f, btnY), new Vector2(btnW, btnH));
+        continueBtn.gameObject.AddComponent<GameplayButtonHoverSound>();
+
+        var backBtn = CreateMenuStyleButton(box.transform, "BackToMenuButton", "返回主菜单", new Vector2(btnW * 0.5f + btnGap * 0.5f, btnY), new Vector2(btnW, btnH));
         backBtn.gameObject.AddComponent<GameplayButtonHoverSound>();
 
         var comp = panel.AddComponent<PauseMenu>();
         comp.musicSlider = musicSlider;
         comp.sfxSlider = sfxSlider;
+        comp.continueButton = continueBtn;
         comp.backToMenuButton = backBtn;
 
         overlay.AddComponent<GameplayButtonHoverSound>();
@@ -242,7 +266,14 @@ public class GameUIRuntimeBootstrap : MonoBehaviour
 
     private static void EnsurePauseButton()
     {
-        if (GameObject.Find("PauseButton") != null) return;
+        if (!IsLevelScene()) return;
+
+        var existing = GameObject.Find("PauseButton");
+        if (existing != null)
+        {
+            existing.SetActive(true);
+            return;
+        }
 
         EnsureGameCanvas();
         var canvas = GameObject.Find("GameCanvas");

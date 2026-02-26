@@ -24,6 +24,7 @@ public class Line
     {
         if (stationSequence == null || stationSequence.Count < 2) return false;
         if (segmentIndex < 0 || segmentIndex >= stationSequence.Count - 1) return false;
+        if (IsLoop()) return true;
         return segmentIndex == 0 || segmentIndex == stationSequence.Count - 2;
     }
 
@@ -31,6 +32,10 @@ public class Line
     public StationBehaviour GetEndStationOfSegment(int segmentIndex)
     {
         if (!IsEndSegment(segmentIndex)) return null;
+        if (IsLoop())
+        {
+            return stationSequence[segmentIndex];
+        }
         if (segmentIndex == 0) return stationSequence[0];
         return stationSequence[stationSequence.Count - 1];
     }
@@ -40,5 +45,30 @@ public class Line
     {
         if (station == null || stationSequence == null) return false;
         return stationSequence.Contains(station);
+    }
+
+    /// <summary>Checks if station is in the line, excluding one occurrence (e.g. the other endpoint for loop detection).</summary>
+    public bool ContainsStationExcluding(StationBehaviour station, StationBehaviour exclude)
+    {
+        if (station == null || stationSequence == null) return false;
+        foreach (var s in stationSequence)
+        {
+            if (s == station && s != exclude) return true;
+        }
+        return false;
+    }
+
+    /// <summary>Checks if adding this station can form a loop (it is already an endpoint).</summary>
+    public bool CanFormLoop(StationBehaviour station)
+    {
+        if (stationSequence == null || stationSequence.Count < 2) return false;
+        return stationSequence[0] == station || stationSequence[stationSequence.Count - 1] == station;
+    }
+
+    /// <summary>Checks if the line is already a loop (first and last are the same station).</summary>
+    public bool IsLoop()
+    {
+        if (stationSequence == null || stationSequence.Count < 3) return false;
+        return stationSequence[0] == stationSequence[stationSequence.Count - 1];
     }
 }

@@ -132,13 +132,17 @@ public static class GameplayUISetup
         sfxLabel.alignment = TextAnchor.MiddleLeft;
         var sfxSlider = CreateVolumeSlider(box.transform, "SFXSlider", new Vector2(0, volY2), new Vector2(volW, volH), "SFXVolume", 0.7f);
 
-        float btnY = -70, btnW = 160, btnH = 48;
-        var backBtn = CreateMenuStyleButton(box.transform, "BackToMenuButton", "返回主菜单", new Vector2(0, btnY), new Vector2(btnW, btnH));
+        float btnY = -70, btnW = 120, btnH = 48, btnGap = 20;
+        var continueBtn = CreateMenuStyleButton(box.transform, "ContinueButton", "继续", new Vector2(-btnW * 0.5f - btnGap * 0.5f, btnY), new Vector2(btnW, btnH));
+        continueBtn.gameObject.AddComponent<GameplayButtonHoverSound>();
+
+        var backBtn = CreateMenuStyleButton(box.transform, "BackToMenuButton", "返回主菜单", new Vector2(btnW * 0.5f + btnGap * 0.5f, btnY), new Vector2(btnW, btnH));
         backBtn.gameObject.AddComponent<GameplayButtonHoverSound>();
 
         var comp = panel.AddComponent<PauseMenu>();
         comp.musicSlider = musicSlider;
         comp.sfxSlider = sfxSlider;
+        comp.continueButton = continueBtn;
         comp.backToMenuButton = backBtn;
 
         overlay.AddComponent<GameplayButtonHoverSound>();

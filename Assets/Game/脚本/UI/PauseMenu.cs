@@ -11,6 +11,7 @@ public class PauseMenu : BasePanel
     [Header("绑定（留空则运行时创建）")]
     public Slider musicSlider;
     public Slider sfxSlider;
+    public Button continueButton;
     public Button backToMenuButton;
 
     private const string MusicVolumeKey = "MusicVolume";
@@ -32,6 +33,10 @@ public class PauseMenu : BasePanel
             sfxSlider.maxValue = 1f;
             sfxSlider.value = PlayerPrefs.GetFloat(SFXVolumeKey, 0.7f);
             sfxSlider.onValueChanged.AddListener(OnSFXVolumeChanged);
+        }
+        if (continueButton != null)
+        {
+            continueButton.onClick.AddListener(() => { GameplayAudio.Instance?.PlayGeneralClick(); OnContinue(); });
         }
         if (backToMenuButton != null)
         {
@@ -68,6 +73,13 @@ public class PauseMenu : BasePanel
     {
         PlayerPrefs.SetFloat(SFXVolumeKey, v);
         PlayerPrefs.Save();
+    }
+
+    private void OnContinue()
+    {
+        var gm = GameManager.Instance;
+        if (gm != null) gm.SetUserPaused(false);
+        Hide();
     }
 
     private void OnBackToMenu()

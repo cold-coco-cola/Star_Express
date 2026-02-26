@@ -94,6 +94,9 @@ public class LineManager : MonoBehaviour, ILineManager
 
         var seq = existingOfColor.stationSequence;
         if (seq.Count < 2) return false;
+
+        if (existingOfColor.IsLoop()) return false;
+
         int firstIdx = 0;
         int lastIdx = seq.Count - 1;
         bool aIsFirst = seq[firstIdx] == stationA;
@@ -104,6 +107,27 @@ public class LineManager : MonoBehaviour, ILineManager
         if (aIsFirst && bIsLast || aIsLast && bIsFirst)
         {
             if (HasAdjacent(seq, stationA, stationB)) return false;
+        }
+
+        StationBehaviour targetStation = null;
+        StationBehaviour excludeEndpoint = null;
+        bool wouldFormLoop = false;
+        if (aIsFirst) { targetStation = stationB; excludeEndpoint = seq[lastIdx]; wouldFormLoop = (seq[lastIdx] == stationB); }
+        else if (aIsLast) { targetStation = stationB; excludeEndpoint = seq[firstIdx]; wouldFormLoop = (seq[firstIdx] == stationB); }
+        else if (bIsFirst) { targetStation = stationA; excludeEndpoint = seq[lastIdx]; wouldFormLoop = (seq[lastIdx] == stationA); }
+        else if (bIsLast) { targetStation = stationA; excludeEndpoint = seq[firstIdx]; wouldFormLoop = (seq[firstIdx] == stationA); }
+
+        if (targetStation != null && existingOfColor.ContainsStationExcluding(targetStation, excludeEndpoint) && !wouldFormLoop)
+            return false;
+
+        if (wouldFormLoop)
+        {
+            if (aIsFirst) { seq.Insert(0, seq[lastIdx]); }
+            else if (aIsLast) { seq.Add(seq[firstIdx]); }
+            else if (bIsFirst) { seq.Insert(0, seq[lastIdx]); }
+            else if (bIsLast) { seq.Add(seq[firstIdx]); }
+            RefreshAllLinesSharingSegmentsWith(existingOfColor);
+            return true;
         }
 
         if (aIsFirst) { seq.Insert(0, stationB); RefreshAllLinesSharingSegmentsWith(existingOfColor); return true; }
@@ -220,20 +244,48 @@ public class LineManager : MonoBehaviour, ILineManager
         var seq = line.stationSequence;
         if (seq == null || seq.Count < 2) return false;
 
+        bool wasLoop = line.IsLoop();
         var endStation = line.GetEndStationOfSegment(segmentIndex);
         if (endStation == null) return false;
 
         StationBehaviour keepStation = null;
-        int newSegmentIndex = -1;
-        if (segmentIndex == 0)
+        if (wasLoop)
+        {
+            int nextIdx = segmentIndex + 1;
+            keepStation = nextIdx < seq.Count ? seq[nextIdx] : null;
+        }
+        else if (segmentIndex == 0)
         {
             keepStation = seq.Count > 1 ? seq[1] : null;
-            newSegmentIndex = 0;
         }
         else
         {
             keepStation = seq.Count > 1 ? seq[seq.Count - 2] : null;
-            newSegmentIndex = Mathf.Max(0, seq.Count - 3);
+        }
+
+        int oldSegmentCount = seq.Count - 1;
+
+        seq.Remove(endStation);
+
+        bool removedTail = false;
+        if (wasLoop && seq.Count >= 2 && seq[0] == seq[seq.Count - 1])
+        {
+            seq.RemoveAt(seq.Count - 1);
+            removedTail = true;
+        }
+
+        int newSegmentCount = seq.Count - 1;
+        if (newSegmentCount < 0) newSegmentCount = 0;
+        int removedSegments = oldSegmentCount - newSegmentCount;
+
+        int newSegmentIndex = 0;
+        if (keepStation != null && seq.Count > 0)
+        {
+            int keepIdx = seq.IndexOf(keepStation);
+            if (keepIdx >= 0 && keepIdx < seq.Count - 1)
+                newSegmentIndex = keepIdx;
+            else if (keepIdx == seq.Count - 1 && seq.Count >= 2)
+                newSegmentIndex = seq.Count - 2;
         }
 
         for (int i = line.ships.Count - 1; i >= 0; i--)
@@ -243,7 +295,7 @@ public class LineManager : MonoBehaviour, ILineManager
 
             if (ship.currentSegmentIndex == segmentIndex)
             {
-                if (keepStation != null)
+                if (keepStation != null && seq.Count >= 2)
                 {
                     ship.transform.position = new Vector3(
                         keepStation.transform.position.x,
@@ -251,18 +303,17 @@ public class LineManager : MonoBehaviour, ILineManager
                         0f
                     );
                     ship.currentSegmentIndex = newSegmentIndex;
-                    ship.progressOnSegment = segmentIndex == 0 ? 0f : 1f;
-                    ship.direction = segmentIndex == 0 ? 1 : -1;
+                    ship.progressOnSegment = 0f;
+                    ship.direction = 1;
                     ship.state = ShipBehaviour.ShipState.Moving;
                 }
             }
             else if (ship.currentSegmentIndex > segmentIndex)
             {
-                ship.currentSegmentIndex--;
+                ship.currentSegmentIndex -= removedSegments;
+                if (ship.currentSegmentIndex < 0) ship.currentSegmentIndex = 0;
             }
         }
-
-        seq.Remove(endStation);
 
         if (seq.Count < 2)
         {
