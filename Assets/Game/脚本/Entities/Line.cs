@@ -18,4 +18,27 @@ public class Line
         id = lineId;
         color = lineColor;
     }
+
+    /// <summary>Whether the segment at the given index is an end segment (one end is a line endpoint).</summary>
+    public bool IsEndSegment(int segmentIndex)
+    {
+        if (stationSequence == null || stationSequence.Count < 2) return false;
+        if (segmentIndex < 0 || segmentIndex >= stationSequence.Count - 1) return false;
+        return segmentIndex == 0 || segmentIndex == stationSequence.Count - 2;
+    }
+
+    /// <summary>Gets the endpoint station of an end segment (degree-1 station). Returns null for middle segments.</summary>
+    public StationBehaviour GetEndStationOfSegment(int segmentIndex)
+    {
+        if (!IsEndSegment(segmentIndex)) return null;
+        if (segmentIndex == 0) return stationSequence[0];
+        return stationSequence[stationSequence.Count - 1];
+    }
+
+    /// <summary>Checks whether the station is already in this line.</summary>
+    public bool ContainsStation(StationBehaviour station)
+    {
+        if (station == null || stationSequence == null) return false;
+        return stationSequence.Contains(station);
+    }
 }

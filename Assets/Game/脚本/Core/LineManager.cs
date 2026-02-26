@@ -149,6 +149,256 @@ public class LineManager : MonoBehaviour, ILineManager
         RefreshAllLinesSharingSegmentsWith(line);
     }
 
+    /// <summary>Inserts a station into the middle of the given segment (simplified: insert at 0.5 progress).</summary>
+    public bool InsertStationIntoLine(Line line, int segmentIndex, StationBehaviour newStation)
+    {
+        if (line == null || newStation == null) return false;
+        if (line.ContainsStation(newStation)) return false;
+        if (!newStation.isUnlocked) return false;
+        var seq = line.stationSequence;
+        if (seq == null || segmentIndex < 0 || segmentIndex + 1 >= seq.Count) return false;
+
+        InsertStationIntoSegment(line, segmentIndex, newStation, 0.5f);
+        return true;
+    }
+
+    /// <summary>Gets the segment under the given world position. Returns (line, segmentIndex) or null.</summary>
+    public (Line line, int segmentIndex)? GetSegmentUnderMouse(Vector2 worldPosition, float hitRadius)
+    {
+        var world2D = worldPosition;
+        Line bestLine = null;
+        int bestSegment = -1;
+        float bestDist = float.MaxValue;
+
+        foreach (var line in _lines)
+        {
+            var pts = GetRawVertexPositions(line);
+            if (pts == null || pts.Count < 2) continue;
+
+            for (int i = 0; i < pts.Count - 1; i++)
+            {
+                float d = GetMinDistanceToSegment(pts, i, world2D);
+                if (d < bestDist && d <= hitRadius)
+                {
+                    bestDist = d;
+                    bestLine = line;
+                    bestSegment = i;
+                }
+            }
+        }
+
+        if (bestLine != null && bestSegment >= 0)
+            return (bestLine, bestSegment);
+        return null;
+    }
+
+    private float GetMinDistanceToSegment(List<Vector3> pts, int segmentIndex, Vector2 worldPos)
+    {
+        if (pts == null || segmentIndex < 0 || segmentIndex + 1 >= pts.Count) return float.MaxValue;
+        Vector3 p0 = segmentIndex > 0 ? pts[segmentIndex - 1] : pts[segmentIndex];
+        Vector3 p1 = pts[segmentIndex];
+        Vector3 p2 = pts[segmentIndex + 1];
+        Vector3 p3 = segmentIndex + 2 < pts.Count ? pts[segmentIndex + 2] : pts[segmentIndex + 1];
+
+        float minDist = float.MaxValue;
+        const int samples = 16;
+        for (int k = 0; k <= samples; k++)
+        {
+            float t = k / (float)samples;
+            Vector3 pt = CatmullRom(p0, p1, p2, p3, t);
+            float d = Vector2.Distance(new Vector2(pt.x, pt.y), worldPos);
+            if (d < minDist) minDist = d;
+        }
+        return minDist;
+    }
+
+    /// <summary>Tries to remove an end segment. Returns true if successful.</summary>
+    public bool TryRemoveEndSegment(Line line, int segmentIndex)
+    {
+        if (line == null || !line.IsEndSegment(segmentIndex)) return false;
+
+        var seq = line.stationSequence;
+        if (seq == null || seq.Count < 2) return false;
+
+        var endStation = line.GetEndStationOfSegment(segmentIndex);
+        if (endStation == null) return false;
+
+        StationBehaviour keepStation = null;
+        int newSegmentIndex = -1;
+        if (segmentIndex == 0)
+        {
+            keepStation = seq.Count > 1 ? seq[1] : null;
+            newSegmentIndex = 0;
+        }
+        else
+        {
+            keepStation = seq.Count > 1 ? seq[seq.Count - 2] : null;
+            newSegmentIndex = Mathf.Max(0, seq.Count - 3);
+        }
+
+        for (int i = line.ships.Count - 1; i >= 0; i--)
+        {
+            var ship = line.ships[i];
+            if (ship == null) continue;
+
+            if (ship.currentSegmentIndex == segmentIndex)
+            {
+                if (keepStation != null)
+                {
+                    ship.transform.position = new Vector3(
+                        keepStation.transform.position.x,
+                        keepStation.transform.position.y,
+                        0f
+                    );
+                    ship.currentSegmentIndex = newSegmentIndex;
+                    ship.progressOnSegment = segmentIndex == 0 ? 0f : 1f;
+                    ship.direction = segmentIndex == 0 ? 1 : -1;
+                    ship.state = ShipBehaviour.ShipState.Moving;
+                }
+            }
+            else if (ship.currentSegmentIndex > segmentIndex)
+            {
+                ship.currentSegmentIndex--;
+            }
+        }
+
+        seq.Remove(endStation);
+
+        if (seq.Count < 2)
+        {
+            RemoveLine(line);
+        }
+        else
+        {
+            RefreshAllLinesSharingSegmentsWith(line);
+        }
+
+        return true;
+    }
+
+    /// <summary>Removes the entire line (when only one station remains). Destroys all ships and releases the visual.</summary>
+    private void RemoveLine(Line line)
+    {
+        if (line == null) return;
+
+        int shipCount = line.ships.Count;
+        if (shipCount > 0)
+            _shipStock += shipCount;
+
+        foreach (var ship in line.ships)
+        {
+            if (ship != null && ship.gameObject != null)
+                Destroy(ship.gameObject);
+        }
+        line.ships.Clear();
+        line.stationSequence.Clear();
+        _lines.Remove(line);
+
+        if (linesRoot == null)
+            linesRoot = GameObject.Find("Map")?.transform?.Find("Lines") ?? GameObject.Find("Lines")?.transform;
+        if (linesRoot != null)
+        {
+            string childName = "Line_视觉_" + line.id;
+            Transform child = linesRoot.Find(childName);
+            if (child != null)
+                Destroy(child.gameObject);
+        }
+    }
+
+    /// <summary>Sets segment highlight with pulse effect. When highlighted, shows overlay; when not, hides it.</summary>
+    public void SetSegmentHighlight(Line line, int segmentIndex, bool highlighted)
+    {
+        if (line == null) return;
+
+        if (linesRoot == null)
+            linesRoot = GameObject.Find("Map")?.transform?.Find("Lines") ?? GameObject.Find("Lines")?.transform;
+        if (linesRoot == null) linesRoot = transform;
+
+        string baseName = "Line_视觉_" + line.id;
+        Transform lineTransform = linesRoot.Find(baseName);
+        if (lineTransform == null) return;
+
+        string highlightName = "SegmentHighlight";
+        Transform highlightTransform = lineTransform.Find(highlightName);
+        LineRenderer highlightLr;
+
+        if (highlighted)
+        {
+            if (highlightTransform == null)
+            {
+                var go = new GameObject(highlightName);
+                go.transform.SetParent(lineTransform, false);
+                go.transform.localPosition = Vector3.zero;
+                go.transform.localScale = Vector3.one;
+                highlightLr = go.AddComponent<LineRenderer>();
+                highlightLr.useWorldSpace = true;
+                highlightLr.loop = false;
+                highlightLr.alignment = LineAlignment.View;
+                highlightLr.material = new Material(GetOrCreateLineMaterial());
+                highlightLr.positionCount = 0;
+                highlightLr.enabled = true;
+            }
+            else
+            {
+                highlightLr = highlightTransform.GetComponent<LineRenderer>();
+            }
+
+            if (highlightLr != null)
+            {
+                var pts = GetRawVertexPositions(line);
+                if (pts != null && segmentIndex >= 0 && segmentIndex + 1 < pts.Count)
+                {
+                    Vector3 p0 = segmentIndex > 0 ? pts[segmentIndex - 1] : pts[segmentIndex];
+                    Vector3 p1 = pts[segmentIndex];
+                    Vector3 p2 = pts[segmentIndex + 1];
+                    Vector3 p3 = segmentIndex + 2 < pts.Count ? pts[segmentIndex + 2] : pts[segmentIndex + 1];
+
+                    var smoothPts = new List<Vector3>();
+                    for (int k = 0; k < LineSmoothSubdivisions; k++)
+                    {
+                        float t = k / (float)LineSmoothSubdivisions;
+                        var pos = CatmullRom(p0, p1, p2, p3, t);
+                        pos.z = 0.5f;
+                        smoothPts.Add(pos);
+                    }
+                    var last = CatmullRom(p0, p1, p2, p3, 1f);
+                    last.z = 0.5f;
+                    smoothPts.Add(last);
+
+                    highlightLr.positionCount = smoothPts.Count;
+                    for (int i = 0; i < smoothPts.Count; i++)
+                        highlightLr.SetPosition(i, smoothPts[i]);
+
+                    Color c = GetColorForLine(line.color);
+                    float pulse = 1f + 0.3f * Mathf.Sin(Time.time * 8f);
+                    float baseWidth = 0.15f;
+                    float w = baseWidth * pulse;
+                    highlightLr.startWidth = highlightLr.endWidth = w;
+                    Color brightColor = new Color(
+                        Mathf.Min(1f, c.r * 1.5f),
+                        Mathf.Min(1f, c.g * 1.5f),
+                        Mathf.Min(1f, c.b * 1.5f),
+                        1f
+                    );
+                    highlightLr.startColor = highlightLr.endColor = brightColor;
+                    if (highlightLr.material != null)
+                    {
+                        if (highlightLr.material.HasProperty("_Color"))
+                            highlightLr.material.SetColor("_Color", brightColor);
+                        if (highlightLr.material.HasProperty("_BaseColor"))
+                            highlightLr.material.SetColor("_BaseColor", brightColor);
+                    }
+                    highlightLr.gameObject.SetActive(true);
+                }
+            }
+        }
+        else
+        {
+            if (highlightTransform != null)
+                highlightTransform.gameObject.SetActive(false);
+        }
+    }
+
     public void AddShipStock(int amount) { _shipStock += amount; }
 
     /// <summary>周奖励「新线路」：增加线路数量上限 1，最多 6 条。</summary>

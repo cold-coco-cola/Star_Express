@@ -56,9 +56,11 @@ public class ShipPlacementPanel : BasePanel
         if (circleButton != null)
         {
             circleButton.onClick.RemoveAllListeners();
-            circleButton.onClick.AddListener(() => { GameplayAudio.Instance?.PlayClick(); OnCircleClick(); });
+            circleButton.onClick.AddListener(OnCircleClick);
             if (circleButton.GetComponent<GameplayButtonHoverSound>() == null)
                 circleButton.gameObject.AddComponent<GameplayButtonHoverSound>();
+            if (circleButton.GetComponent<ButtonClickAnim>() == null)
+                circleButton.gameObject.AddComponent<ButtonClickAnim>();
             var img = circleButton.GetComponent<Image>();
             if (img != null) img.raycastTarget = true;
             if (circleButton.targetGraphic == null) circleButton.targetGraphic = img;
@@ -162,7 +164,6 @@ public class ShipPlacementPanel : BasePanel
     private void OnCirclePointerDown()
     {
         if (fanPanelRoot != null && fanPanelRoot.activeSelf) return;
-        GameplayAudio.Instance?.PlayClick();
         _ignoreNextClick = true;
         OpenFan();
     }
@@ -174,6 +175,7 @@ public class ShipPlacementPanel : BasePanel
             _ignoreNextClick = false;
             return;
         }
+        GameplayAudio.Instance?.PlayClick();
         if (fanPanelRoot != null && fanPanelRoot.activeSelf)
         {
             CloseFan();

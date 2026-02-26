@@ -21,16 +21,32 @@ public class GameUIRuntimeBootstrap : MonoBehaviour
 
     private void EnsureUI()
     {
+        EnsureGameCanvas();
         EnsureWeekRewardSelectionPopup();
         EnsureGameOverPopup();
         EnsurePauseMenu();
         EnsurePauseButton();
     }
 
+    private static void EnsureGameCanvas()
+    {
+        if (GameObject.Find("GameCanvas") != null) return;
+
+        var canvas = new GameObject("GameCanvas");
+        canvas.AddComponent<Canvas>().renderMode = RenderMode.ScreenSpaceOverlay;
+        var scaler = canvas.AddComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920, 1080);
+        canvas.AddComponent<GraphicRaycaster>();
+        Object.DontDestroyOnLoad(canvas);
+        Debug.Log("[GameUIRuntimeBootstrap] Created GameCanvas");
+    }
+
     private static void EnsureWeekRewardSelectionPopup()
     {
         if (Object.FindObjectOfType<WeekRewardSelectionPopup>() != null) return;
 
+        EnsureGameCanvas();
         var canvas = GameObject.Find("GameCanvas");
         if (canvas == null) return;
 
@@ -73,6 +89,7 @@ public class GameUIRuntimeBootstrap : MonoBehaviour
     {
         if (Object.FindObjectOfType<GameOverPopup>() != null) return;
 
+        EnsureGameCanvas();
         var canvas = GameObject.Find("GameCanvas");
         if (canvas == null) return;
 
@@ -113,6 +130,7 @@ public class GameUIRuntimeBootstrap : MonoBehaviour
     {
         if (Object.FindObjectOfType<PauseMenu>() != null) return;
 
+        EnsureGameCanvas();
         var canvas = GameObject.Find("GameCanvas");
         if (canvas == null) return;
 
@@ -226,6 +244,7 @@ public class GameUIRuntimeBootstrap : MonoBehaviour
     {
         if (GameObject.Find("PauseButton") != null) return;
 
+        EnsureGameCanvas();
         var canvas = GameObject.Find("GameCanvas");
         if (canvas == null) return;
 

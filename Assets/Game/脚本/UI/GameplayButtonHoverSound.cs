@@ -8,8 +8,8 @@ using UnityEngine.EventSystems;
 [RequireComponent(typeof(UnityEngine.UI.Button))]
 public class GameplayButtonHoverSound : MonoBehaviour, IPointerEnterHandler
 {
-    [Tooltip("同一音效最小间隔（秒），避免快速划过时重叠")]
-    [SerializeField] private float _cooldown = 0.06f;
+    [Tooltip("Same sound minimum interval (seconds), avoid overlap when quickly moving across buttons")]
+    [SerializeField] private float _cooldown = 0.03f;
 
     private static float _lastPlayTime;
 

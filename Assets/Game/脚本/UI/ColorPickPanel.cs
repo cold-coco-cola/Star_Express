@@ -109,19 +109,21 @@ public class ColorPickPanel : BasePanel
 
     private void BindButtonEvents()
     {
-        var audio = GameplayAudio.Instance;
-        if (buttonRed != null) { buttonRed.onClick.RemoveAllListeners(); buttonRed.onClick.AddListener(() => { audio?.PlayClick(); OnColor(LineColor.Red); }); AddHoverSound(buttonRed); }
-        if (buttonGreen != null) { buttonGreen.onClick.RemoveAllListeners(); buttonGreen.onClick.AddListener(() => { audio?.PlayClick(); OnColor(LineColor.Green); }); AddHoverSound(buttonGreen); }
-        if (buttonBlue != null) { buttonBlue.onClick.RemoveAllListeners(); buttonBlue.onClick.AddListener(() => { audio?.PlayClick(); OnColor(LineColor.Blue); }); AddHoverSound(buttonBlue); }
-        if (buttonYellow != null) { buttonYellow.onClick.RemoveAllListeners(); buttonYellow.onClick.AddListener(() => { audio?.PlayClick(); OnColor(LineColor.Yellow); }); AddHoverSound(buttonYellow); }
-        if (buttonCyan != null) { buttonCyan.onClick.RemoveAllListeners(); buttonCyan.onClick.AddListener(() => { audio?.PlayClick(); OnColor(LineColor.Cyan); }); AddHoverSound(buttonCyan); }
-        if (buttonMagenta != null) { buttonMagenta.onClick.RemoveAllListeners(); buttonMagenta.onClick.AddListener(() => { audio?.PlayClick(); OnColor(LineColor.Magenta); }); AddHoverSound(buttonMagenta); }
-        if (buttonCancel != null) { buttonCancel.onClick.RemoveAllListeners(); buttonCancel.onClick.AddListener(() => { audio?.PlayClick(); OnCancelClick(); }); AddHoverSound(buttonCancel); }
+        if (buttonRed != null) { buttonRed.onClick.RemoveAllListeners(); buttonRed.onClick.AddListener(() => { GameplayAudio.Instance?.PlayClick(); OnColor(LineColor.Red); }); AddInteractionComponents(buttonRed); }
+        if (buttonGreen != null) { buttonGreen.onClick.RemoveAllListeners(); buttonGreen.onClick.AddListener(() => { GameplayAudio.Instance?.PlayClick(); OnColor(LineColor.Green); }); AddInteractionComponents(buttonGreen); }
+        if (buttonBlue != null) { buttonBlue.onClick.RemoveAllListeners(); buttonBlue.onClick.AddListener(() => { GameplayAudio.Instance?.PlayClick(); OnColor(LineColor.Blue); }); AddInteractionComponents(buttonBlue); }
+        if (buttonYellow != null) { buttonYellow.onClick.RemoveAllListeners(); buttonYellow.onClick.AddListener(() => { GameplayAudio.Instance?.PlayClick(); OnColor(LineColor.Yellow); }); AddInteractionComponents(buttonYellow); }
+        if (buttonCyan != null) { buttonCyan.onClick.RemoveAllListeners(); buttonCyan.onClick.AddListener(() => { GameplayAudio.Instance?.PlayClick(); OnColor(LineColor.Cyan); }); AddInteractionComponents(buttonCyan); }
+        if (buttonMagenta != null) { buttonMagenta.onClick.RemoveAllListeners(); buttonMagenta.onClick.AddListener(() => { GameplayAudio.Instance?.PlayClick(); OnColor(LineColor.Magenta); }); AddInteractionComponents(buttonMagenta); }
+        if (buttonCancel != null) { buttonCancel.onClick.RemoveAllListeners(); buttonCancel.onClick.AddListener(() => { GameplayAudio.Instance?.PlayClick(); OnCancelClick(); }); AddInteractionComponents(buttonCancel); }
     }
 
-    private void AddHoverSound(UnityEngine.UI.Button btn)
+    private void AddInteractionComponents(UnityEngine.UI.Button btn)
     {
-        if (btn == null || btn.GetComponent<GameplayButtonHoverSound>() != null) return;
-        btn.gameObject.AddComponent<GameplayButtonHoverSound>();
+        if (btn == null) return;
+        if (btn.GetComponent<GameplayButtonHoverSound>() == null)
+            btn.gameObject.AddComponent<GameplayButtonHoverSound>();
+        if (btn.GetComponent<ButtonClickAnim>() == null)
+            btn.gameObject.AddComponent<ButtonClickAnim>();
     }
 }

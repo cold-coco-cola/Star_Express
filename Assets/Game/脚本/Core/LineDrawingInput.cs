@@ -12,11 +12,20 @@ public class LineDrawingInput : MonoBehaviour
     [Header("调试")]
     [SerializeField] private bool debugLog = false;
 
+    [Header("线段编辑")]
+    [Tooltip("Mouse hit radius for segment detection")]
+    [SerializeField] private float _segmentHitRadius = 0.8f;
+
     private enum State { Idle, FirstSelected }
     private State _state = State.Idle;
     private StationBehaviour _selectedA;
 
     private ColorPickPanel _colorPickPanel;
+
+    private Line _hoveredLine;
+    private int _hoveredSegmentIndex = -1;
+    private Line _editingLine;
+    private int _editingSegmentIndex = -1;
 
     private void Awake()
     {
@@ -55,16 +64,152 @@ public class LineDrawingInput : MonoBehaviour
 
     private void Update()
     {
-        if (!Input.GetMouseButtonDown(0)) return;
+        TryResolveReferences();
+        if (lineManager == null) return;
+
+        var cam = Camera.main;
+        if (cam == null) return;
 
         bool overUI = EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
-        TryResolveReferences();
+        Vector2 mouseWorld = GetMouseWorld2D(cam);
+
+        UpdateSegmentHover(mouseWorld, overUI);
+
+        if (Input.GetMouseButtonDown(1))
+        {
+            HandleRightClick(mouseWorld, overUI);
+            return;
+        }
+
+        if (Input.GetMouseButtonDown(0))
+        {
+            HandleLeftClick(mouseWorld, overUI);
+        }
+    }
+
+    private void UpdateSegmentHover(Vector2 mouseWorld, bool overUI)
+    {
+        if (overUI) return;
+
+        if (_editingLine != null)
+        {
+            lineManager.SetSegmentHighlight(_editingLine, _editingSegmentIndex, true);
+            return;
+        }
+
+        var hit = lineManager.GetSegmentUnderMouse(mouseWorld, _segmentHitRadius);
+        if (hit.HasValue)
+        {
+            var (line, segIdx) = hit.Value;
+            if (line.IsEndSegment(segIdx))
+            {
+                if (_hoveredLine != line || _hoveredSegmentIndex != segIdx)
+                {
+                    ClearHoverHighlight();
+                    _hoveredLine = line;
+                    _hoveredSegmentIndex = segIdx;
+                }
+                lineManager.SetSegmentHighlight(line, segIdx, true);
+            }
+            else
+            {
+                ClearHoverHighlight();
+            }
+        }
+        else
+        {
+            ClearHoverHighlight();
+        }
+    }
+
+    private void ClearHoverHighlight()
+    {
+        if (_hoveredLine != null && _hoveredSegmentIndex >= 0)
+        {
+            lineManager?.SetSegmentHighlight(_hoveredLine, _hoveredSegmentIndex, false);
+        }
+        _hoveredLine = null;
+        _hoveredSegmentIndex = -1;
+    }
+
+    private void ClearSegmentEditing()
+    {
+        if (_editingLine != null && _editingSegmentIndex >= 0)
+        {
+            lineManager?.SetSegmentHighlight(_editingLine, _editingSegmentIndex, false);
+        }
+        _editingLine = null;
+        _editingSegmentIndex = -1;
+    }
+
+    private void HandleRightClick(Vector2 mouseWorld, bool overUI)
+    {
+        if (overUI) return;
+
+        var hit = lineManager.GetSegmentUnderMouse(mouseWorld, _segmentHitRadius);
+        if (!hit.HasValue)
+        {
+            ClearSegmentEditing();
+            return;
+        }
+
+        var (line, segIdx) = hit.Value;
+
+        if (_editingLine == line && _editingSegmentIndex == segIdx)
+        {
+            if (line.IsEndSegment(segIdx))
+            {
+                bool ok = lineManager.TryRemoveEndSegment(line, segIdx);
+                if (ok)
+                {
+                    GameplayAudio.Instance?.PlayGeneralClick();
+                    if (debugLog) Debug.Log("[连线输入] 端点段已删除");
+                }
+            }
+            else
+            {
+                if (debugLog) Debug.Log("[连线输入] 中间段不可删除");
+                GameplayAudio.Instance?.PlayGeneralClick();
+            }
+            ClearSegmentEditing();
+        }
+        else
+        {
+            ClearSegmentEditing();
+            ClearHighlightAndReset();
+            _editingLine = line;
+            _editingSegmentIndex = segIdx;
+            lineManager.SetSegmentHighlight(line, segIdx, true);
+            GameplayAudio.Instance?.PlayGeneralClick();
+            if (debugLog) Debug.Log("[连线输入] 进入线段编辑: " + line.id + " seg=" + segIdx);
+        }
+    }
+
+    private void HandleLeftClick(Vector2 mouseWorld, bool overUI)
+    {
         var station = GetStationUnderMouse();
         if (debugLog)
-            Debug.Log("[连线输入] 点击: overUI=" + overUI + " state=" + _state + " station=" + (station != null ? station.displayName : "null"));
+            Debug.Log("[连线输入] 左键: overUI=" + overUI + " state=" + _state + " editing=" + (_editingLine != null) + " station=" + (station != null ? station.displayName : "null"));
 
         if (overUI)
             return;
+
+        if (_editingLine != null)
+        {
+            if (station != null && station.isUnlocked && !_editingLine.ContainsStation(station))
+            {
+                bool ok = lineManager.InsertStationIntoLine(_editingLine, _editingSegmentIndex, station);
+                if (ok)
+                {
+                    station.PlayClickPop();
+                    GameplayAudio.Instance?.PlayGeneralClick();
+                    if (debugLog) Debug.Log("[连线输入] 已插入站点: " + station.displayName);
+                }
+            }
+            ClearSegmentEditing();
+            ClearHighlightAndReset();
+            return;
+        }
 
         if (_state == State.Idle)
         {
