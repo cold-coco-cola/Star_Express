@@ -245,47 +245,26 @@ public class LineManager : MonoBehaviour, ILineManager
         if (seq == null || seq.Count < 2) return false;
 
         bool wasLoop = line.IsLoop();
+
+        if (wasLoop)
+        {
+            return TryRemoveLoopSegment(line, segmentIndex);
+        }
+
         var endStation = line.GetEndStationOfSegment(segmentIndex);
         if (endStation == null) return false;
 
         StationBehaviour keepStation = null;
-        if (wasLoop)
-        {
-            int nextIdx = segmentIndex + 1;
-            keepStation = nextIdx < seq.Count ? seq[nextIdx] : null;
-        }
-        else if (segmentIndex == 0)
+        int newSegmentIndex = 0;
+        if (segmentIndex == 0)
         {
             keepStation = seq.Count > 1 ? seq[1] : null;
+            newSegmentIndex = 0;
         }
         else
         {
             keepStation = seq.Count > 1 ? seq[seq.Count - 2] : null;
-        }
-
-        int oldSegmentCount = seq.Count - 1;
-
-        seq.Remove(endStation);
-
-        bool removedTail = false;
-        if (wasLoop && seq.Count >= 2 && seq[0] == seq[seq.Count - 1])
-        {
-            seq.RemoveAt(seq.Count - 1);
-            removedTail = true;
-        }
-
-        int newSegmentCount = seq.Count - 1;
-        if (newSegmentCount < 0) newSegmentCount = 0;
-        int removedSegments = oldSegmentCount - newSegmentCount;
-
-        int newSegmentIndex = 0;
-        if (keepStation != null && seq.Count > 0)
-        {
-            int keepIdx = seq.IndexOf(keepStation);
-            if (keepIdx >= 0 && keepIdx < seq.Count - 1)
-                newSegmentIndex = keepIdx;
-            else if (keepIdx == seq.Count - 1 && seq.Count >= 2)
-                newSegmentIndex = seq.Count - 2;
+            newSegmentIndex = Mathf.Max(0, seq.Count - 3);
         }
 
         for (int i = line.ships.Count - 1; i >= 0; i--)
@@ -310,8 +289,68 @@ public class LineManager : MonoBehaviour, ILineManager
             }
             else if (ship.currentSegmentIndex > segmentIndex)
             {
-                ship.currentSegmentIndex -= removedSegments;
+                ship.currentSegmentIndex--;
                 if (ship.currentSegmentIndex < 0) ship.currentSegmentIndex = 0;
+            }
+        }
+
+        seq.Remove(endStation);
+
+        if (seq.Count < 2)
+        {
+            RemoveLine(line);
+        }
+        else
+        {
+            RefreshAllLinesSharingSegmentsWith(line);
+        }
+
+        return true;
+    }
+
+    /// <summary>Removes a segment from a loop line. Rearranges the sequence so the break point becomes the new endpoints.</summary>
+    private bool TryRemoveLoopSegment(Line line, int segmentIndex)
+    {
+        var seq = line.stationSequence;
+        if (seq == null || seq.Count < 3) return false;
+        if (segmentIndex < 0 || segmentIndex >= seq.Count - 1) return false;
+
+        StationBehaviour breakStart = seq[segmentIndex];
+        StationBehaviour breakEnd = seq[segmentIndex + 1];
+
+        seq.RemoveAt(seq.Count - 1);
+
+        var newSeq = new List<StationBehaviour>();
+        for (int i = segmentIndex; i >= 0; i--)
+        {
+            newSeq.Add(seq[i]);
+        }
+        for (int i = seq.Count - 1; i > segmentIndex; i--)
+        {
+            newSeq.Add(seq[i]);
+        }
+
+        seq.Clear();
+        seq.AddRange(newSeq);
+
+        StationBehaviour keepStation = seq.Count > 0 ? seq[0] : null;
+
+        for (int i = line.ships.Count - 1; i >= 0; i--)
+        {
+            var ship = line.ships[i];
+            if (ship == null) continue;
+
+            if (keepStation != null && seq.Count >= 2)
+            {
+                ship.transform.position = new Vector3(
+                    keepStation.transform.position.x,
+                    keepStation.transform.position.y,
+                    0f
+                );
+                ship.currentSegmentIndex = 0;
+                ship.progressOnSegment = 0f;
+                ship.direction = 1;
+                ship.state = ShipBehaviour.ShipState.Moving;
             }
         }
 

@@ -58,7 +58,9 @@ public class GameOverPopup : BasePanel
 
     private void OnBack()
     {
-        // 返回主菜单；若无主菜单场景则重载当前场景
+        var gm = GameManager.Instance;
+        if (gm != null) Destroy(gm.gameObject);
+        Hide();
         var buildCount = SceneManager.sceneCountInBuildSettings;
         if (buildCount > 1)
             SceneManager.LoadScene(0);

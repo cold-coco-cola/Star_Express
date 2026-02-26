@@ -21,14 +21,90 @@ public class GameUIRuntimeBootstrap : MonoBehaviour
 
     private void EnsureUI()
     {
-        EnsureGameCanvas();
-        EnsureWeekRewardSelectionPopup();
-        EnsureGameOverPopup();
-        EnsurePauseMenu();
         if (IsLevelScene())
+        {
+            EnsureGameCanvasForLevel();
+            EnsureWeekRewardSelectionPopup();
+            EnsureGameOverPopup();
+            EnsurePauseMenu();
+            EnsureGameCanvasVisibleInLevel();
             EnsurePauseButton();
+            HideNonLevelPopups();
+            CleanupDontDestroyOnLoadGameCanvas();
+        }
         else
+        {
+            EnsureGameCanvas();
             HidePauseButtonInNonLevelScene();
+            HideAllGameplayPopups();
+        }
+    }
+
+    /// <summary>关卡场景：确保有 GameCanvas（优先用场景内的），供弹窗挂载。若需新建则挂在当前场景，不进入 DontDestroyOnLoad。</summary>
+    private static void EnsureGameCanvasForLevel()
+    {
+        if (FindGameCanvasInActiveScene() != null) return;
+        if (GameObject.Find("GameCanvas") != null) return;
+        CreateGameCanvasInActiveScene();
+    }
+
+    private static void CreateGameCanvasInActiveScene()
+    {
+        var canvas = new GameObject("GameCanvas");
+        canvas.AddComponent<Canvas>().renderMode = RenderMode.ScreenSpaceOverlay;
+        var scaler = canvas.AddComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920, 1080);
+        canvas.AddComponent<GraphicRaycaster>();
+        SceneManager.MoveGameObjectToScene(canvas, SceneManager.GetActiveScene());
+        Debug.Log("[GameUIRuntimeBootstrap] 已在关卡场景创建 GameCanvas");
+    }
+
+    /// <summary>从 LevelSelect 进入关卡时，重新显示被隐藏的 GameCanvas。</summary>
+    private static void EnsureGameCanvasVisibleInLevel()
+    {
+        var canvases = Object.FindObjectsOfType<Canvas>(true);
+        foreach (var c in canvases)
+        {
+            if (c != null && c.gameObject.name == "GameCanvas")
+                c.gameObject.SetActive(true);
+        }
+    }
+
+    /// <summary>进入关卡后销毁 DontDestroyOnLoad 中的冗余 GameCanvas，避免重复的隐藏弹窗占用资源。</summary>
+    private static void CleanupDontDestroyOnLoadGameCanvas()
+    {
+        var activeScene = SceneManager.GetActiveScene();
+        var canvases = Object.FindObjectsOfType<Canvas>(true);
+        foreach (var c in canvases)
+        {
+            if (c == null || c.gameObject.name != "GameCanvas") continue;
+            if (c.gameObject.scene != activeScene)
+            {
+                Object.Destroy(c.gameObject);
+                Debug.Log("[GameUIRuntimeBootstrap] 已清理 DontDestroyOnLoad 中的冗余 GameCanvas");
+            }
+        }
+    }
+
+    private static void HideNonLevelPopups()
+    {
+        var gameOver = Object.FindObjectOfType<GameOverPopup>(true);
+        if (gameOver != null) gameOver.Hide();
+        var weekReward = Object.FindObjectOfType<WeekRewardSelectionPopup>(true);
+        if (weekReward != null) weekReward.Hide();
+        var pauseMenu = Object.FindObjectOfType<PauseMenu>(true);
+        if (pauseMenu != null) pauseMenu.Hide();
+    }
+
+    private static void HideAllGameplayPopups()
+    {
+        var gameOver = Object.FindObjectOfType<GameOverPopup>(true);
+        if (gameOver != null) gameOver.Hide();
+        var weekReward = Object.FindObjectOfType<WeekRewardSelectionPopup>(true);
+        if (weekReward != null) weekReward.Hide();
+        var pauseMenu = Object.FindObjectOfType<PauseMenu>(true);
+        if (pauseMenu != null) pauseMenu.Hide();
     }
 
     private static void HidePauseButtonInNonLevelScene()
@@ -66,8 +142,12 @@ public class GameUIRuntimeBootstrap : MonoBehaviour
     {
         if (Object.FindObjectOfType<WeekRewardSelectionPopup>() != null) return;
 
-        EnsureGameCanvas();
-        var canvas = GameObject.Find("GameCanvas");
+        var canvas = FindGameCanvasInActiveScene() ?? GameObject.Find("GameCanvas");
+        if (canvas == null)
+        {
+            EnsureGameCanvasForLevel();
+            canvas = FindGameCanvasInActiveScene() ?? GameObject.Find("GameCanvas");
+        }
         if (canvas == null) return;
 
         var panel = new GameObject("WeekRewardSelectionPopup");
@@ -109,8 +189,12 @@ public class GameUIRuntimeBootstrap : MonoBehaviour
     {
         if (Object.FindObjectOfType<GameOverPopup>() != null) return;
 
-        EnsureGameCanvas();
-        var canvas = GameObject.Find("GameCanvas");
+        var canvas = FindGameCanvasInActiveScene() ?? GameObject.Find("GameCanvas");
+        if (canvas == null)
+        {
+            EnsureGameCanvasForLevel();
+            canvas = FindGameCanvasInActiveScene() ?? GameObject.Find("GameCanvas");
+        }
         if (canvas == null) return;
 
         var panel = new GameObject("GameOverPopup");
@@ -148,11 +232,29 @@ public class GameUIRuntimeBootstrap : MonoBehaviour
 
     private static void EnsurePauseMenu()
     {
-        if (Object.FindObjectOfType<PauseMenu>() != null) return;
-
         EnsureGameCanvas();
-        var canvas = GameObject.Find("GameCanvas");
+        var canvas = FindGameCanvasInActiveScene() ?? GameObject.Find("GameCanvas");
         if (canvas == null) return;
+
+        var existing = FindPauseMenuInActiveScene();
+        if (existing != null)
+        {
+            if (existing.backToMenuButton == null)
+            {
+                Object.DestroyImmediate(existing.gameObject);
+            }
+            else if (existing.continueButton == null)
+            {
+                AddContinueButtonToExistingPauseMenu(existing);
+                existing.Hide();
+                return;
+            }
+            else
+            {
+                existing.Hide();
+                return;
+            }
+        }
 
         var panel = new GameObject("PauseMenu");
         panel.transform.SetParent(canvas.transform, false);
@@ -227,6 +329,67 @@ public class GameUIRuntimeBootstrap : MonoBehaviour
         Debug.Log("[GameUIRuntimeBootstrap] 已创建 PauseMenu");
     }
 
+    private static PauseMenu FindPauseMenuInActiveScene()
+    {
+        var activeScene = SceneManager.GetActiveScene();
+        var all = Object.FindObjectsOfType<PauseMenu>(true);
+        foreach (var pm in all)
+        {
+            if (pm != null && pm.gameObject.scene == activeScene)
+                return pm;
+        }
+        return all != null && all.Length > 0 ? all[0] : null;
+    }
+
+    /// <summary>优先使用当前关卡场景内的 PauseButton，保证从不同入口进入时行为一致。</summary>
+    private static GameObject FindPauseButtonInActiveScene()
+    {
+        var activeScene = SceneManager.GetActiveScene();
+        foreach (var root in activeScene.GetRootGameObjects())
+        {
+            var btns = root.GetComponentsInChildren<Button>(true);
+            foreach (var b in btns)
+            {
+                if (b != null && b.gameObject.name == "PauseButton" && b.gameObject.scene == activeScene)
+                    return b.gameObject;
+            }
+        }
+        return null;
+    }
+
+    /// <summary>优先使用当前关卡场景内的 GameCanvas，保证 PauseButton 等 UI 挂在正确画布下。</summary>
+    private static GameObject FindGameCanvasInActiveScene()
+    {
+        var activeScene = SceneManager.GetActiveScene();
+        foreach (var root in activeScene.GetRootGameObjects())
+        {
+            if (root.name == "GameCanvas") return root;
+        }
+        return null;
+    }
+
+    private static void AddContinueButtonToExistingPauseMenu(PauseMenu pauseMenu)
+    {
+        var backBtn = pauseMenu.backToMenuButton;
+        if (backBtn == null) return;
+
+        Transform parent = backBtn.transform.parent;
+        if (parent == null) return;
+
+        var backRt = backBtn.GetComponent<RectTransform>();
+        float btnW = backRt != null ? backRt.sizeDelta.x : 160f;
+        float btnH = backRt != null ? backRt.sizeDelta.y : 48f;
+        float btnGap = 20f;
+        Vector2 backPos = backRt != null ? backRt.anchoredPosition : Vector2.zero;
+        Vector2 continuePos = new Vector2(backPos.x - btnW - btnGap, backPos.y);
+
+        var continueBtn = CreateMenuStyleButton(parent, "ContinueButton", "继续", continuePos, new Vector2(btnW, btnH));
+        if (continueBtn.GetComponent<GameplayButtonHoverSound>() == null)
+            continueBtn.gameObject.AddComponent<GameplayButtonHoverSound>();
+
+        pauseMenu.continueButton = continueBtn;
+    }
+
     /// <summary>与 StartMenu 按钮同风格：透明背景、MenuButton（悬停音效+缩放+颜色）、ButtonClickAnim。</summary>
     private static Button CreateMenuStyleButton(Transform parent, string name, string label, Vector2 pos, Vector2 size)
     {
@@ -264,57 +427,66 @@ public class GameUIRuntimeBootstrap : MonoBehaviour
         return btn;
     }
 
+    /// <summary>暂停键点击逻辑：始终使用当前场景内的 PauseMenu，保证从 LevelSelect/StartMenu 进入时与直接进入 SolarSystem 行为一致。</summary>
+    private static void OnPauseButtonClicked()
+    {
+        GameplayAudio.Instance?.PlayGeneralClick();
+        var gm = GameManager.Instance;
+        if (gm == null || gm.IsGameOver || gm.IsPausedForWeekReward) return;
+        var menu = FindPauseMenuInActiveScene();
+        if (menu != null)
+        {
+            if (gm.IsPausedByUser)
+            {
+                gm.SetUserPaused(false);
+                menu.Hide();
+            }
+            else
+            {
+                gm.SetUserPaused(true);
+                menu.Show();
+                menu.transform.SetAsLastSibling();
+            }
+        }
+    }
+
     private static void EnsurePauseButton()
     {
         if (!IsLevelScene()) return;
 
-        var existing = GameObject.Find("PauseButton");
+        var existing = FindPauseButtonInActiveScene() ?? GameObject.Find("PauseButton");
         if (existing != null)
         {
             existing.SetActive(true);
+            var btn = existing.GetComponent<Button>();
+            if (btn != null)
+            {
+                btn.onClick.RemoveAllListeners();
+                btn.onClick.AddListener(OnPauseButtonClicked);
+            }
             return;
         }
 
         EnsureGameCanvas();
-        var canvas = GameObject.Find("GameCanvas");
+        var canvas = FindGameCanvasInActiveScene() ?? GameObject.Find("GameCanvas");
         if (canvas == null) return;
 
         const float size = 64f;
         const float margin = 8f;
-        var btn = CreateButton(canvas.transform, "PauseButton", "⏸", Vector2.zero, new Vector2(size, size), new Color(0.35f, 0.4f, 0.5f));
-        btn.gameObject.name = "PauseButton";
-        var r = btn.GetComponent<RectTransform>();
+        var newBtn = CreateButton(canvas.transform, "PauseButton", "⏸", Vector2.zero, new Vector2(size, size), new Color(0.35f, 0.4f, 0.5f));
+        newBtn.gameObject.name = "PauseButton";
+        var r = newBtn.GetComponent<RectTransform>();
         r.anchorMin = new Vector2(1, 1);
         r.anchorMax = new Vector2(1, 1);
         r.pivot = new Vector2(1, 1);
         r.anchoredPosition = new Vector2(-margin, -margin);
         r.sizeDelta = new Vector2(size, size);
         r.SetAsLastSibling();
-        btn.GetComponentInChildren<Text>().fontSize = 28;
+        newBtn.GetComponentInChildren<Text>().fontSize = 28;
 
-        btn.gameObject.AddComponent<GameplayButtonHoverSound>();
-        btn.onClick.AddListener(() =>
-        {
-            GameplayAudio.Instance?.PlayGeneralClick();
-            var gm = GameManager.Instance;
-            if (gm == null || gm.IsGameOver || gm.IsPausedForWeekReward) return;
-            var menu = Object.FindObjectOfType<PauseMenu>(true);
-            if (menu != null)
-            {
-                if (gm.IsPausedByUser)
-                {
-                    gm.SetUserPaused(false);
-                    menu.Hide();
-                }
-                else
-                {
-                    gm.SetUserPaused(true);
-                    menu.Show();
-                    menu.transform.SetAsLastSibling();
-                }
-            }
-        });
-        AddButtonClickAnim(btn);
+        newBtn.gameObject.AddComponent<GameplayButtonHoverSound>();
+        newBtn.onClick.AddListener(OnPauseButtonClicked);
+        AddButtonClickAnim(newBtn);
         Debug.Log("[GameUIRuntimeBootstrap] 已创建 PauseButton");
     }
 

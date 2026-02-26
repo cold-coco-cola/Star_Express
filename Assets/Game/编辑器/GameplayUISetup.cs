@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using Game.Scripts.UI;
 
 /// <summary>
@@ -26,18 +27,25 @@ public static class GameplayUISetup
     {
         var canvas = EnsureGameCanvas();
         if (canvas == null) return;
-
-        var existing = GameObject.Find("PauseButton");
-        if (existing != null)
+        if (EnsurePauseButtonUnder(canvas.transform))
         {
-            Selection.activeGameObject = existing;
-            Debug.Log("[GameplayUISetup] PauseButton already exists");
+            Selection.activeGameObject = GameObject.Find("PauseButton");
+            Debug.Log("[GameplayUISetup] Created PauseButton");
             return;
         }
+        var existing = GameObject.Find("PauseButton");
+        if (existing != null) Selection.activeGameObject = existing;
+    }
+
+    /// <summary>Creates PauseButton under parent if missing. Returns true if created.</summary>
+    public static bool EnsurePauseButtonUnder(Transform parent)
+    {
+        if (parent.Find("PauseButton") != null) return false;
 
         const float size = 64f;
         const float margin = 8f;
-        var btn = CreateButton(canvas.transform, "PauseButton", "⏸", Vector2.zero, new Vector2(size, size), new Color(0.35f, 0.4f, 0.5f));
+        var btn = CreateButton(parent, "PauseButton", "⏸", Vector2.zero, new Vector2(size, size), new Color(0.35f, 0.4f, 0.5f));
+        Undo.RegisterCreatedObjectUndo(btn.gameObject, "Create Pause Button");
         var r = btn.GetComponent<RectTransform>();
         r.anchorMin = new Vector2(1, 1);
         r.anchorMax = new Vector2(1, 1);
@@ -71,11 +79,41 @@ public static class GameplayUISetup
             }
         });
 
-        Selection.activeGameObject = btn.gameObject;
-        Debug.Log("[GameplayUISetup] Created PauseButton");
+        return true;
     }
 
-    [MenuItem("Tools/Gameplay UI/Create Pause Menu", false, 2)]
+    [MenuItem("Tools/Gameplay UI/Add Missing Continue Button to Pause Menu", false, 2)]
+    public static void AddMissingContinueButton()
+    {
+        if (AddContinueButtonIfMissing())
+        {
+            EditorSceneManager.MarkSceneDirty(UnityEngine.SceneManagement.SceneManager.GetActiveScene());
+            var existing = Object.FindObjectOfType<PauseMenu>(true);
+            if (existing != null && existing.continueButton != null)
+                Selection.activeGameObject = existing.continueButton.gameObject;
+            Debug.Log("[GameplayUISetup] Added ContinueButton to PauseMenu. Save the scene to persist.");
+        }
+        else
+        {
+            var existing = Object.FindObjectOfType<PauseMenu>(true);
+            if (existing != null && existing.continueButton != null)
+                Selection.activeGameObject = existing.continueButton.gameObject;
+            Debug.Log("[GameplayUISetup] PauseMenu already has ContinueButton or no PauseMenu found.");
+        }
+    }
+
+    /// <summary>Adds ContinueButton to PauseMenu if missing. Returns true if changes were made.</summary>
+    public static bool AddContinueButtonIfMissing()
+    {
+        var existing = Object.FindObjectOfType<PauseMenu>(true);
+        if (existing == null) return false;
+        if (existing.continueButton != null) return false;
+        if (existing.backToMenuButton == null) return false;
+        AddContinueButtonToPauseMenuInEditor(existing);
+        return true;
+    }
+
+    [MenuItem("Tools/Gameplay UI/Create Pause Menu", false, 3)]
     public static void EnsurePauseMenu()
     {
         var canvas = EnsureGameCanvas();
@@ -84,9 +122,25 @@ public static class GameplayUISetup
         var existing = Object.FindObjectOfType<PauseMenu>(true);
         if (existing != null)
         {
-            Selection.activeGameObject = existing.gameObject;
-            Debug.Log("[GameplayUISetup] PauseMenu already exists");
-            return;
+            if (existing.backToMenuButton == null)
+            {
+                Object.DestroyImmediate(existing.gameObject);
+            }
+            else if (existing.continueButton == null)
+            {
+                AddContinueButtonToPauseMenuInEditor(existing);
+                UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(
+                    UnityEngine.SceneManagement.SceneManager.GetActiveScene());
+                Selection.activeGameObject = existing.gameObject;
+                Debug.Log("[GameplayUISetup] Added ContinueButton to existing PauseMenu. Save the scene to persist.");
+                return;
+            }
+            else
+            {
+                Selection.activeGameObject = existing.gameObject;
+                Debug.Log("[GameplayUISetup] PauseMenu already exists");
+                return;
+            }
         }
 
         var panel = new GameObject("PauseMenu");
@@ -164,7 +218,31 @@ public static class GameplayUISetup
         Debug.Log("[GameplayUISetup] Created PauseMenu");
     }
 
-    [MenuItem("Tools/Gameplay UI/Create Game Over Popup", false, 3)]
+    private static void AddContinueButtonToPauseMenuInEditor(PauseMenu pauseMenu)
+    {
+        var backBtn = pauseMenu.backToMenuButton;
+        if (backBtn == null) return;
+
+        Transform parent = backBtn.transform.parent;
+        if (parent == null) return;
+
+        var backRt = backBtn.GetComponent<RectTransform>();
+        float btnW = backRt != null ? backRt.sizeDelta.x : 160f;
+        float btnH = backRt != null ? backRt.sizeDelta.y : 48f;
+        float btnGap = 20f;
+        Vector2 backPos = backRt != null ? backRt.anchoredPosition : Vector2.zero;
+        Vector2 continuePos = new Vector2(backPos.x - btnW - btnGap, backPos.y);
+
+        var continueBtn = CreateMenuStyleButton(parent, "ContinueButton", "继续", continuePos, new Vector2(btnW, btnH));
+        Undo.RegisterCreatedObjectUndo(continueBtn.gameObject, "Add Continue Button");
+        if (continueBtn.GetComponent<GameplayButtonHoverSound>() == null)
+            continueBtn.gameObject.AddComponent<GameplayButtonHoverSound>();
+
+        Undo.RecordObject(pauseMenu, "Assign Continue Button");
+        pauseMenu.continueButton = continueBtn;
+    }
+
+    [MenuItem("Tools/Gameplay UI/Create Game Over Popup", false, 4)]
     public static void EnsureGameOverPopup()
     {
         var canvas = EnsureGameCanvas();
@@ -213,7 +291,7 @@ public static class GameplayUISetup
         Debug.Log("[GameplayUISetup] Created GameOverPopup");
     }
 
-    [MenuItem("Tools/Gameplay UI/Create Week Reward Selection Popup", false, 4)]
+    [MenuItem("Tools/Gameplay UI/Create Week Reward Selection Popup", false, 5)]
     public static void EnsureWeekRewardSelectionPopup()
     {
         var canvas = EnsureGameCanvas();
@@ -264,7 +342,7 @@ public static class GameplayUISetup
         Debug.Log("[GameplayUISetup] Created WeekRewardSelectionPopup");
     }
 
-    [MenuItem("Tools/Gameplay UI/Create Color Pick Panel", false, 5)]
+    [MenuItem("Tools/Gameplay UI/Create Color Pick Panel", false, 6)]
     public static void EnsureColorPickPanel()
     {
         var canvas = EnsureGameCanvas();

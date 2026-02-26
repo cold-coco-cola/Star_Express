@@ -86,6 +86,7 @@ public class PauseMenu : BasePanel
     {
         var gm = GameManager.Instance;
         if (gm != null) Destroy(gm.gameObject);
+        Hide();
         if (SceneExists(StartMenuScene))
             SceneManager.LoadScene(StartMenuScene);
         else

@@ -57,6 +57,8 @@ public static class AutoSetupGameUI
         changed |= EnsureCarriagePlacementPanel(canvas.transform);
         changed |= EnsureWeekRewardSelectionPopup(canvas.transform);
         changed |= EnsureGameOverPopup(canvas.transform);
+        changed |= GameplayUISetup.AddContinueButtonIfMissing();
+        changed |= GameplayUISetup.EnsurePauseButtonUnder(canvas.transform);
         changed |= EnsureBackgroundCanvas();
 
         if (changed)
@@ -81,6 +83,8 @@ public static class AutoSetupGameUI
         cleaned |= RemoveDuplicateChildren(canvasGo.transform, "WeekRewardSelectionPopup");
         cleaned |= RemoveLegacyWeekRewardPopup(canvasGo.transform);
         cleaned |= RemoveDuplicateChildren(canvasGo.transform, "GameOverPopup");
+        cleaned |= RemoveDuplicateChildren(canvasGo.transform, "PauseMenu");
+        cleaned |= RemoveDuplicateChildren(canvasGo.transform, "PauseButton");
         cleaned |= RemoveDuplicateChildren(canvasGo.transform, "EventSystem");
 
         // 场景根级别的 EventSystem 只保留一个
