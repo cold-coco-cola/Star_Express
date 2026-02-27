@@ -133,10 +133,38 @@ public static class RouteHelper
 
     /// <summary>
     /// 目标站是否在船当前前进方向上。direction 1=向高索引，-1=向低索引。
+    /// line 非空且为环形时，正确处理首尾相接的循环。
     /// </summary>
     public static bool IsTargetAheadOnLine(int currentStationIdx, int targetStationIdx, int direction)
     {
+        return IsTargetAheadOnLine(null, currentStationIdx, targetStationIdx, direction);
+    }
+
+    /// <summary>
+    /// 目标站是否在船当前前进方向上。环形线路时支持首尾 wrap-around。
+    /// </summary>
+    public static bool IsTargetAheadOnLine(Line line, int currentStationIdx, int targetStationIdx, int direction)
+    {
         if (targetStationIdx < 0) return false;
+        if (line != null && line.IsLoop())
+        {
+            var seq = line.stationSequence;
+            if (seq == null || seq.Count < 3) return IsTargetAheadOnLineSimple(currentStationIdx, targetStationIdx, direction);
+            int count = seq.Count;
+            // 环形：索引 0 与 count-1 为同一站，到达首/末时视为同一位置
+            if (currentStationIdx == 0 || currentStationIdx == count - 1)
+                return targetStationIdx >= 1 && targetStationIdx <= count - 2;
+            if (direction > 0)
+                return targetStationIdx != currentStationIdx;
+            return targetStationIdx != currentStationIdx;
+        }
+        if (direction > 0) return targetStationIdx > currentStationIdx;
+        if (direction < 0) return targetStationIdx < currentStationIdx;
+        return false;
+    }
+
+    private static bool IsTargetAheadOnLineSimple(int currentStationIdx, int targetStationIdx, int direction)
+    {
         if (direction > 0) return targetStationIdx > currentStationIdx;
         if (direction < 0) return targetStationIdx < currentStationIdx;
         return false;

@@ -591,8 +591,16 @@ public class ShipBehaviour : MonoBehaviour
         int stationIdx = currentSegmentIndex + (_dockedAtSegmentEnd ? 1 : 0);
         bool atFirst = stationIdx == 0;
         bool atLast = stationIdx == count - 1;
+        bool isLoop = line != null && line.IsLoop();
 
-        if (atFirst)
+        // 环形线路特殊处理：到达末尾时继续循环，不调头
+        if (isLoop && atLast)
+        {
+            direction = 1;
+            currentSegmentIndex = 0;
+            progressOnSegment = 0f;
+        }
+        else if (atFirst)
         {
             direction = 1;
             currentSegmentIndex = 0;
@@ -660,8 +668,9 @@ public class ShipBehaviour : MonoBehaviour
 
         // 载客/换乘需用「离站后的前进方向」：端点的 _arrivalDirection 指向来向，离站时会掉头，需修正
         int direction = _arrivalDirection;
+        bool isLoop = line != null && line.IsLoop();
         if (stationIdx == 0) direction = 1;
-        else if (stationIdx == seq.Count - 1) direction = -1;
+        else if (stationIdx == seq.Count - 1) direction = isLoop ? 1 : -1; // 环形线路末尾方向为1
         if (direction == 0) direction = 1; // 防御：不应出现 0
         var result = PassengerTransportLogic.ComputeDockingActions(station, stationIdx, this, direction, allLines);
 

@@ -102,7 +102,7 @@ public static class PassengerTransportLogic
         {
             foreach (int idx in targetIndices)
             {
-                if (RouteHelper.IsTargetAheadOnLine(stationIdx, idx, direction))
+                if (RouteHelper.IsTargetAheadOnLine(currentLine, stationIdx, idx, direction))
                     return false; // 有目标在前进方向，继续直达
             }
             return true; // 所有目标都在反方向，下车换乘
@@ -136,7 +136,7 @@ public static class PassengerTransportLogic
             var targetIndices = RouteHelper.GetAllTargetStationIndicesOnLine(line, passenger.targetShape, passenger.targetStationId);
             foreach (int idx in targetIndices)
             {
-                if (RouteHelper.IsTargetAheadOnLine(stationIdx, idx, direction))
+                if (RouteHelper.IsTargetAheadOnLine(line, stationIdx, idx, direction))
                     return true;
             }
             return false;
@@ -144,14 +144,33 @@ public static class PassengerTransportLogic
 
         // 无直达：需换乘，仅当本线前进方向有可换乘到目标的换乘站时载客
         int step = (direction > 0) ? 1 : -1;
-        for (int i = stationIdx + step; i >= 0 && i < seq.Count; i += step)
+        bool isLoop = line.IsLoop();
+        int count = seq.Count;
+
+        if (isLoop && count >= 3)
         {
-            var s = seq[i];
-            if (s == null) continue;
-            if (IsDestinationStation(s, passenger)) return true;
-            if (allLines.Count >= 2 && IsTransferStation(s, line, allLines) &&
-                (RouteHelper.CanReach(s, passenger.targetShape, allLines) || RouteHelper.CanReachTargetShapeAny(s, passenger.targetShape, allLines)))
-                return true;
+            for (int k = 1; k < count; k++)
+            {
+                int i = ((stationIdx + step * k) % count + count) % count;
+                var s = seq[i];
+                if (s == null) continue;
+                if (IsDestinationStation(s, passenger)) return true;
+                if (allLines.Count >= 2 && IsTransferStation(s, line, allLines) &&
+                    (RouteHelper.CanReach(s, passenger.targetShape, allLines) || RouteHelper.CanReachTargetShapeAny(s, passenger.targetShape, allLines)))
+                    return true;
+            }
+        }
+        else
+        {
+            for (int i = stationIdx + step; i >= 0 && i < seq.Count; i += step)
+            {
+                var s = seq[i];
+                if (s == null) continue;
+                if (IsDestinationStation(s, passenger)) return true;
+                if (allLines.Count >= 2 && IsTransferStation(s, line, allLines) &&
+                    (RouteHelper.CanReach(s, passenger.targetShape, allLines) || RouteHelper.CanReachTargetShapeAny(s, passenger.targetShape, allLines)))
+                    return true;
+            }
         }
         return false;
     }
