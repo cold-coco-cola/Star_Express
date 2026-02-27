@@ -209,16 +209,10 @@ public class ShipBehaviour : MonoBehaviour
         }
     }
 
-    /// <summary>船上乘客相对站点乘客等比缩小，不拉伸。站点乘客基准 scale=1、icon=0.4；船上用 localScale 抵消飞船的 Y 压扁，实现等比缩小。
-    /// 停靠时向船尾方向偏移，减少与站台乘客重叠。</summary>
+    /// <summary>船上乘客相对站点乘客等比缩小，不拉伸。抵消飞船 Y 压缩，停靠时向船尾方向偏移。</summary>
     public void RefreshPassengerPositionsOnShip()
     {
         var shipScale = transform.localScale;
-        float uniformWorldScale = 0.23f;
-        float px = uniformWorldScale / Mathf.Max(0.001f, shipScale.x);
-        float py = uniformWorldScale / Mathf.Max(0.001f, shipScale.y);
-        float pz = uniformWorldScale / Mathf.Max(0.001f, shipScale.z);
-
         float dockOffsetX = (state == ShipState.Docked) ? -0.1f : 0f;
 
         for (int i = 0; i < passengers.Count; i++)
@@ -232,16 +226,17 @@ public class ShipBehaviour : MonoBehaviour
             float row = i / 4;
             float col = i % 4;
             float x = (col - 1.5f) * 0.25f + 0.05f;
-            float y = - row * 0.45f + 0.1f;
+            float y = - row * 0.45f - 0.35f;
             p.transform.localPosition = new Vector3(x, y, -0.05f);
-            p.transform.localScale = new Vector3(px, py, pz);
+            p.transform.localScale = new Vector3(1f / shipScale.x, 1f / shipScale.y, 1f / shipScale.z);
             var iconSr = p.GetComponentInChildren<SpriteRenderer>();
             if (iconSr != null)
             {
                 iconSr.sortingLayerID = SortingOrderConstants.ShipsLayerId;
                 iconSr.sortingOrder = SortingOrderConstants.Passenger;
                 iconSr.enabled = true;
-                iconSr.transform.localScale = Vector3.one;
+                float iconScale = Passenger.GetShipPassengerIconScale(iconSr.sprite, p.targetShape);
+                iconSr.transform.localScale = Vector3.one * iconScale;
                 if (iconSr.sprite == null)
                     iconSr.sprite = Passenger.GetPlaceholderShapeSpriteForShip();
                 iconSr.color = new Color(0.85f, 0.85f, 0.95f, 0.5f);

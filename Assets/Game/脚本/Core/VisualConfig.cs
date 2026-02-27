@@ -11,7 +11,7 @@ public struct RewardPopupLayout
 [CreateAssetMenu(fileName = "VisualConfig", menuName = "Star Express/Visual Config", order = 2)]
 public class VisualConfig : ScriptableObject
 {
-    [Tooltip("站点形状与乘客头顶形状图，按 ShapeType 索引")]
+    [Tooltip("站点形状与乘客头顶形状图，按 ShapeType 索引。0-3: Circle/Triangle/Square/Star，4-7: Hexagon/Sector/Cross/Capsule")]
     public Sprite[] shapeSprites;
     [Tooltip("航线颜色，至少 3 色，按 LineColor 索引")]
     public Color[] lineColors;

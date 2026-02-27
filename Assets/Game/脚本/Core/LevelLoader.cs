@@ -14,6 +14,20 @@ public static class LevelLoader
     /// <summary>站点间距缩放，使站点更分散。</summary>
     public const float StationPositionScale = 1.8f;
 
+    /// <summary>各形状的额外缩放倍率（按 ShapeType 索引：Circle, Triangle, Square, Star, Hexagon, Sector, Cross, Capsule）</summary>
+    private static readonly float[] ShapeScaleMultipliers = new float[]
+    {
+        1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.25f, 1.0f, 1.0f
+    };
+
+    public static float GetShapeScaleMultiplier(ShapeType shapeType)
+    {
+        int idx = (int)shapeType;
+        if (idx >= 0 && idx < ShapeScaleMultipliers.Length)
+            return ShapeScaleMultipliers[idx];
+        return 1f;
+    }
+
     /// <summary>
     /// 加载关卡：在 stationsParent 下按 levelConfig 实例化开局站点（前 startStationCount 个），并注入数据与视觉。
     /// 若 stationsById 非 null，会注册每个站的 id→StationBehaviour。
@@ -54,7 +68,7 @@ public static class LevelLoader
                 sr.sortingLayerID = SortingOrderConstants.ShipsLayerId;
                 sr.sortingOrder = SortingOrderConstants.Station;
                 var visual = sr.transform;
-                visual.localScale = Vector3.one * GetStationVisualScale(sr.sprite);
+                visual.localScale = Vector3.one * GetStationVisualScale(sr.sprite, config.shapeType);
             }
 
             var station = go.GetComponent<StationBehaviour>();
@@ -102,7 +116,7 @@ public static class LevelLoader
             sr.sortingLayerID = SortingOrderConstants.ShipsLayerId;
             sr.sortingOrder = SortingOrderConstants.Station;
             var visual = sr.transform;
-            float baseScale = GetStationVisualScale(sr.sprite);
+            float baseScale = GetStationVisualScale(sr.sprite, shapeType);
             visual.localScale = Vector3.one * (playSpawnAnimation ? 0.01f : baseScale);
         }
 
@@ -121,13 +135,18 @@ public static class LevelLoader
         return station;
     }
 
-    /// <summary>根据 Sprite 尺寸计算统一显示缩放，保证各形状站点视觉大小一致。</summary>
-    public static float GetStationVisualScale(Sprite sprite)
+    /// <summary>根据 Sprite 尺寸计算统一显示缩放，保证各形状站点视觉大小一致。可选传入 ShapeType 应用额外缩放。</summary>
+    public static float GetStationVisualScale(Sprite sprite, ShapeType shapeType = ShapeType.Circle)
     {
-        if (sprite == null) return StationVisualWorldSize;
-        var size = sprite.bounds.size;
-        float maxExtent = Mathf.Max(size.x, size.y);
-        return maxExtent > 0.001f ? StationVisualWorldSize / maxExtent : StationVisualWorldSize;
+        float baseScale = StationVisualWorldSize;
+        if (sprite != null)
+        {
+            var size = sprite.bounds.size;
+            float maxExtent = Mathf.Max(size.x, size.y);
+            if (maxExtent > 0.001f)
+                baseScale = StationVisualWorldSize / maxExtent;
+        }
+        return baseScale * GetShapeScaleMultiplier(shapeType);
     }
 
     private static Sprite GetOrCreatePlaceholderSprite()

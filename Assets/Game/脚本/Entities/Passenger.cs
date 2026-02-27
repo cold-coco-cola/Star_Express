@@ -63,14 +63,9 @@ public class Passenger : MonoBehaviour
             var iconGo = new GameObject("TargetIcon");
             iconGo.transform.SetParent(transform, false);
             iconGo.transform.localPosition = new Vector3(0f, 0.3f, 0f);
-            iconGo.transform.localScale = Vector3.one * 0.25f;
             _iconRenderer = iconGo.AddComponent<SpriteRenderer>();
             _iconRenderer.sortingLayerID = SortingOrderConstants.ShipsLayerId;
             _iconRenderer.sortingOrder = state == PassengerState.Waiting ? SortingOrderConstants.StationPassenger : SortingOrderConstants.Passenger;
-        }
-        else if (state == PassengerState.Waiting)
-        {
-            _iconRenderer.transform.localScale = Vector3.one * 0.25f;
         }
 
         var vc = GameManager.Instance != null ? GameManager.Instance.visualConfig : null;
@@ -84,6 +79,34 @@ public class Passenger : MonoBehaviour
             _iconRenderer.sprite = GetPlaceholderShapeSprite();
         _iconRenderer.color = new Color(0.55f, 0.55f, 0.6f, 1f);
         _iconRenderer.sortingOrder = state == PassengerState.Waiting ? SortingOrderConstants.StationPassenger : SortingOrderConstants.Passenger;
+
+        float iconScale = GetStationPassengerIconScale(_iconRenderer.sprite, targetShape);
+        _iconRenderer.transform.localScale = Vector3.one * iconScale;
+    }
+
+    /// <summary>站点乘客相对于站点的缩放比例</summary>
+    public const float StationPassengerRatio = 0.35f;
+    /// <summary>飞船乘客相对于站点的缩放比例</summary>
+    public const float ShipPassengerRatio = 0.35f;
+
+    /// <summary>获取站点乘客 icon 缩放。以站点大小为基准。</summary>
+    public static float GetStationPassengerIconScale(Sprite sprite, ShapeType shapeType = ShapeType.Circle)
+    {
+        if (sprite == null) return StationPassengerRatio;
+        var size = sprite.bounds.size;
+        float maxExtent = Mathf.Max(size.x, size.y);
+        float stationScale = maxExtent > 0.001f ? LevelLoader.StationVisualWorldSize / maxExtent : LevelLoader.StationVisualWorldSize;
+        return stationScale * LevelLoader.GetShapeScaleMultiplier(shapeType) * StationPassengerRatio;
+    }
+
+    /// <summary>获取飞船乘客 icon 缩放。以站点大小为基准。</summary>
+    public static float GetShipPassengerIconScale(Sprite sprite, ShapeType shapeType = ShapeType.Circle)
+    {
+        if (sprite == null) return ShipPassengerRatio;
+        var size = sprite.bounds.size;
+        float maxExtent = Mathf.Max(size.x, size.y);
+        float stationScale = maxExtent > 0.001f ? LevelLoader.StationVisualWorldSize / maxExtent : LevelLoader.StationVisualWorldSize;
+        return stationScale * LevelLoader.GetShapeScaleMultiplier(shapeType) * ShipPassengerRatio;
     }
 
     /// <summary>乘客上船。调用方需先从站台 waitingPassengers 移除。</summary>

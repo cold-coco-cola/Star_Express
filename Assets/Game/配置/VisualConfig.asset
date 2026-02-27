@@ -17,6 +17,10 @@ MonoBehaviour:
   - {fileID: 7482667652216324306, guid: 902c55888ae15e24d94eac10d1b11e59, type: 3}
   - {fileID: 7482667652216324306, guid: 9883dee9eef6fe8498cbc071cea19174, type: 3}
   - {fileID: 3625043607559282579, guid: b89f4515b9c41b6499b8eaa0e88a51b5, type: 3}
+  - {fileID: -2135585597343286014, guid: 52fa1490e60f3d346b80b2513e677fa2, type: 3}
+  - {fileID: 21300000, guid: 4381c9f3a6a95984abe278e404f8679f, type: 3}
+  - {fileID: 21300000, guid: dd1e133a2bd4f844597138075d7821f0, type: 3}
+  - {fileID: -9095717837082945937, guid: 67886178652a1e240afc552b4a651b74, type: 3}
   lineColors:
   - {r: 0.8113208, g: 0.16085012, b: 0.13777144, a: 1}
   - {r: 0.11573606, g: 0.8962264, b: 0.097232126, a: 1}
@@ -26,3 +30,8 @@ MonoBehaviour:
   - {r: 0.9, g: 0.25, b: 0.65, a: 1}
   shipSprite: {fileID: 0}
   passengerSprite: {fileID: 0}
+  rewardIcons: []
+  rewardPopupLayout:
+    panelSize: {x: 0, y: 0}
+    buttonSize: {x: 0, y: 0}
+    buttonGap: 0

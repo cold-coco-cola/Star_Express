@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 /// <summary>
@@ -7,7 +8,13 @@ using UnityEngine;
 /// </summary>
 public class StationSpawner : MonoBehaviour
 {
-    private const float SpawnCountTwoProbability = 0.4f;
+    private int GetSpawnCount(int week)
+    {
+        if (week == 1) return 2;
+        if (week <= 4) return 2;
+        return Random.value < 0.5f ? 2 : 3; // 第5周起随机2或3个
+    }
+
     private const float SpawnWindowStart = 0.2f;
     private const float SpawnWindowEnd = 0.8f;
     private const float MinSpawnGapSeconds = 10f;
@@ -25,6 +32,7 @@ public class StationSpawner : MonoBehaviour
     private float _weekTimer;
     private readonly List<float> _scheduledSpawnTimes = new List<float>();
     private int _lastWeek = -1;
+    private int _spawnedThisWeek = 0;
 
     private void Update()
     {
@@ -38,10 +46,11 @@ public class StationSpawner : MonoBehaviour
         {
             _lastWeek = week;
             _scheduledSpawnTimes.Clear();
+            _spawnedThisWeek = 0;
             float weekDur = gm.WeekDurationSeconds;
             float spawnMin = weekDur * SpawnWindowStart;
             float spawnMax = weekDur * SpawnWindowEnd;
-            int toSpawn = Random.value < SpawnCountTwoProbability ? 2 : 3;
+            int toSpawn = GetSpawnCount(week);
             float span = spawnMax - spawnMin;
             float totalGap = MinSpawnGapSeconds * (toSpawn - 1);
             float segSize = Mathf.Max(0.1f, (span - totalGap) / toSpawn);
@@ -76,6 +85,10 @@ public class StationSpawner : MonoBehaviour
         StationConfig template = PickSpawnTemplate(config);
         if (template == null) return false;
 
+        // 根据周数和概率选择形状，覆盖模板中的 shapeType
+        int week = gm.CurrentWeek;
+        ShapeType shapeToUse = PickShapeType(week, _spawnedThisWeek);
+
         var result = FindSpawnPosition(stations, config, gm);
         if (result == null) return false;
 
@@ -83,7 +96,7 @@ public class StationSpawner : MonoBehaviour
         var parent = gm.stationsParent;
         if (parent == null) return false;
 
-        var station = LevelLoader.SpawnStation(config, parent, gm.stationPrefab, gm.visualConfig, result.Value.position, template.shapeType, template.displayName, id, stations, true);
+        var station = LevelLoader.SpawnStation(config, parent, gm.stationPrefab, gm.visualConfig, result.Value.position, shapeToUse, template.displayName, id, stations, true);
         if (station == null) return false;
 
         if (result.Value.lineToInsertInto != null)
@@ -94,9 +107,10 @@ public class StationSpawner : MonoBehaviour
         }
 
         gm.NotifyStationSpawned(station);
+        _spawnedThisWeek++;
         Debug.Log(result.Value.lineToInsertInto != null
-            ? $"[StationSpawner] 生成线上站 {id} ({template.displayName}) 于 {result.Value.position}"
-            : $"[StationSpawner] 生成新站 {id} ({template.displayName}) 于 {result.Value.position}");
+            ? $"[StationSpawner] 生成线上站 {id} ({template.displayName}, {shapeToUse}) 于 {result.Value.position}"
+            : $"[StationSpawner] 生成新站 {id} ({template.displayName}, {shapeToUse}) 于 {result.Value.position}");
         return true;
     }
 
@@ -115,6 +129,70 @@ public class StationSpawner : MonoBehaviour
             pool.AddRange(config.stations);
         if (pool.Count == 0) return null;
         return pool[Random.Range(0, pool.Count)];
+    }
+
+    /// <summary>根据当前周数返回已解锁的形状列表。</summary>
+    private List<ShapeType> GetUnlockedShapes(int week)
+    {
+        var shapes = new List<ShapeType> { ShapeType.Circle, ShapeType.Triangle, ShapeType.Square, ShapeType.Star };
+        var balance = GameManager.Instance != null ? GameManager.Instance.gameBalance : null;
+        int hex = balance != null ? balance.hexagonUnlockWeek : 3;
+        int sec = balance != null ? balance.sectorUnlockWeek : 4;
+        int crs = balance != null ? balance.crossUnlockWeek : 5;
+        int cap = balance != null ? balance.capsuleUnlockWeek : 7;
+        if (week >= hex) shapes.Add(ShapeType.Hexagon);
+        if (week >= sec) shapes.Add(ShapeType.Sector);
+        if (week >= crs) shapes.Add(ShapeType.Cross);
+        if (week >= cap) shapes.Add(ShapeType.Capsule);
+        return shapes;
+    }
+
+    /// <summary>根据当前周数返回高级形状的生成概率（0-1）。</summary>
+    private float GetAdvancedShapeProbability(int week)
+    {
+        if (week <= 1) return 0f;
+        if (week == 2) return 0.05f;
+        if (week <= 4) return 0.10f;
+        if (week <= 6) return 0.20f;
+        if (week <= 10) return 0.35f;
+        return 0.50f;
+    }
+
+    /// <summary>根据周数和概率选择站点形状。解锁当周第一个生成的站点必为新解锁的形状。</summary>
+    private ShapeType PickShapeType(int week, int spawnedThisWeek)
+    {
+        var unlockedShapes = GetUnlockedShapes(week);
+        var basicShapes = unlockedShapes.Where(s => (int)s <= 3).ToList();
+        var advancedShapes = unlockedShapes.Where(s => (int)s >= 4).ToList();
+
+        if (spawnedThisWeek == 0)
+        {
+            var newlyUnlocked = GetNewlyUnlockedShape(week);
+            if (newlyUnlocked.HasValue)
+                return newlyUnlocked.Value;
+        }
+
+        float advancedProb = GetAdvancedShapeProbability(week);
+
+        if (advancedShapes.Count == 0 || Random.value >= advancedProb)
+            return basicShapes[Random.Range(0, basicShapes.Count)];
+
+        return advancedShapes[Random.Range(0, advancedShapes.Count)];
+    }
+
+    private ShapeType? GetNewlyUnlockedShape(int week)
+    {
+        var balance = GameManager.Instance != null ? GameManager.Instance.gameBalance : null;
+        int hexWeek = balance != null ? balance.hexagonUnlockWeek : 3;
+        int secWeek = balance != null ? balance.sectorUnlockWeek : 4;
+        int crsWeek = balance != null ? balance.crossUnlockWeek : 5;
+        int capWeek = balance != null ? balance.capsuleUnlockWeek : 7;
+
+        if (week == capWeek) return ShapeType.Capsule;
+        if (week == crsWeek) return ShapeType.Cross;
+        if (week == secWeek) return ShapeType.Sector;
+        if (week == hexWeek) return ShapeType.Hexagon;
+        return null;
     }
 
     private struct SpawnResult

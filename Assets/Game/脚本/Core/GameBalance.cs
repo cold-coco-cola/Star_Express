@@ -19,6 +19,26 @@ public class GameBalance : ScriptableObject
     [Tooltip("每站同时生成数量")]
     public int passengerSpawnCountPerStation = 1;
 
+    [Header("高级站点")]
+    [Tooltip("第几周解锁六边形")]
+    public int hexagonUnlockWeek = 3;
+    [Tooltip("第几周解锁扇形")]
+    public int sectorUnlockWeek = 4;
+    [Tooltip("第几周解锁十字")]
+    public int crossUnlockWeek = 5;
+    [Tooltip("第几周解锁胶囊")]
+    public int capsuleUnlockWeek = 7;
+
+    [Header("乘客生成间隔（按周数）")]
+    [Tooltip("第1-2周乘客生成间隔")]
+    public float passengerIntervalWeek1to2 = 12f;
+    [Tooltip("第3-5周乘客生成间隔")]
+    public float passengerIntervalWeek3to5 = 10f;
+    [Tooltip("第6-10周乘客生成间隔")]
+    public float passengerIntervalWeek6to10 = 8f;
+    [Tooltip("第11周及以后乘客生成间隔")]
+    public float passengerIntervalWeek11plus = 6f;
+
     [Header("时间")]
     [Tooltip("游戏内 1 周(秒)")]
     public float weekDurationSeconds = 90f;
@@ -34,8 +54,8 @@ public class GameBalance : ScriptableObject
     public float dockDurationSeconds = 1f;
 
     [Header("类型数量")]
-    [Tooltip("形状类型数量")]
-    public int shapeTypeCount = 4;
+    [Tooltip("形状类型数量（含基础4种+高级4种）")]
+    public int shapeTypeCount = 8;
     [Tooltip("航线颜色数量")]
     public int lineColorCount = 3;
 }

@@ -116,20 +116,27 @@ public class StationBehaviour : MonoBehaviour
         var gm = GameManager.Instance;
         if (gm == null) return 10f;
 
-        var balance = gm.gameBalance;
-        float defaultInterval = balance != null ? balance.passengerSpawnInterval : 10f;
+        int week = gm.CurrentWeek;
 
         var config = gm.levelConfig;
         if (config != null && config.overrides != null)
         {
             var ov = config.overrides;
-            if (gm.CurrentWeek >= ov.passengerSpawnIntervalAfterWeeks && ov.passengerSpawnIntervalLate > 0)
+            if (week >= ov.passengerSpawnIntervalAfterWeeks && ov.passengerSpawnIntervalLate > 0)
                 return ov.passengerSpawnIntervalLate;
             if (ov.passengerSpawnInterval > 0)
                 return ov.passengerSpawnInterval;
         }
 
-        return defaultInterval;
+        var balance = gm.gameBalance;
+        float w1 = balance != null ? balance.passengerIntervalWeek1to2 : 12f;
+        float w2 = balance != null ? balance.passengerIntervalWeek3to5 : 10f;
+        float w3 = balance != null ? balance.passengerIntervalWeek6to10 : 8f;
+        float w4 = balance != null ? balance.passengerIntervalWeek11plus : 6f;
+        if (week <= 2) return w1;
+        if (week <= 5) return w2;
+        if (week <= 10) return w3;
+        return w4;
     }
 
     /// <summary>
@@ -156,25 +163,74 @@ public class StationBehaviour : MonoBehaviour
         p.PlaySpawnAnimation();
     }
 
-    /// <summary>从已解锁站点的形状中均匀随机选取目标形状；站点不生成与自己同类的乘客。</summary>
+    /// <summary>采用"60%随机+40%平衡"策略选择目标形状。</summary>
     private ShapeType? PickTargetShape()
     {
         if (GameManager.Instance == null) return null;
         var stations = GameManager.Instance.GetAllStations();
         if (stations == null || stations.Count == 0) return null;
 
-        var shapes = new List<ShapeType>();
+        var shapeStats = new Dictionary<ShapeType, ShapeCongestionInfo>();
+
         foreach (var kv in stations)
         {
             if (!kv.Value.isUnlocked) continue;
             var shape = kv.Value.stationType;
-            if (shape == stationType) continue; // 不生成与自己同类的乘客
-            if (!shapes.Contains(shape))
-                shapes.Add(shape);
+            if (shape == stationType) continue;
+
+            if (!shapeStats.ContainsKey(shape))
+            {
+                shapeStats[shape] = new ShapeCongestionInfo
+                {
+                    shape = shape,
+                    totalWaiting = 0,
+                    stationCount = 0,
+                    maxCapacity = 0
+                };
+            }
+
+            var info = shapeStats[shape];
+            info.totalWaiting += kv.Value.waitingPassengers.Count;
+            info.stationCount++;
+            info.maxCapacity += kv.Value.queueCapacity;
+            shapeStats[shape] = info;
         }
 
-        if (shapes.Count == 0) return null;
-        return shapes[Random.Range(0, shapes.Count)];
+        if (shapeStats.Count == 0) return null;
+
+        var availableShapes = new List<ShapeType>();
+        foreach (var kv in shapeStats)
+        {
+            var info = kv.Value;
+            float congestionRatio = info.stationCount > 0 ? (float)info.totalWaiting / Mathf.Max(1, info.maxCapacity) : 0f;
+
+            availableShapes.Add(kv.Key);
+            if (congestionRatio < 0.7f)
+                availableShapes.Add(kv.Key);
+        }
+
+        if (Random.value < 0.6f)
+            return availableShapes[Random.Range(0, availableShapes.Count)];
+
+        ShapeType? leastCongested = null;
+        int minWaiting = int.MaxValue;
+        foreach (var kv in shapeStats)
+        {
+            if (kv.Value.totalWaiting < minWaiting)
+            {
+                minWaiting = kv.Value.totalWaiting;
+                leastCongested = kv.Key;
+            }
+        }
+        return leastCongested;
+    }
+
+    private struct ShapeCongestionInfo
+    {
+        public ShapeType shape;
+        public int totalWaiting;
+        public int stationCount;
+        public int maxCapacity;
     }
 
     /// <summary>若多站同形状，返回 null，让乘客在第一个到达的同形状站下车；单站时返回其 id 以便精确匹配。</summary>
@@ -219,7 +275,7 @@ public class StationBehaviour : MonoBehaviour
         if (_visualRenderer == null) return;
         var visual = _visualRenderer.transform;
         float t = _spawnAnimProgress;
-        float baseScale = LevelLoader.GetStationVisualScale(_visualRenderer.sprite);
+        float baseScale = LevelLoader.GetStationVisualScale(_visualRenderer.sprite, stationType);
         float ortho = Camera.main != null ? Camera.main.orthographicSize : 10f;
         float overshoot = Mathf.Lerp(1.2f, _spawnOvershootMax, Mathf.Clamp01(ortho / 15f));
         float scale = baseScale * EaseElasticSpawn(t, overshoot) * GetClickPopScale();
@@ -282,7 +338,7 @@ public class StationBehaviour : MonoBehaviour
         if (_visualRenderer != null && _spawnAnimProgress >= 1f)
         {
             var visual = _visualRenderer.transform;
-            float baseScale = LevelLoader.GetStationVisualScale(_visualRenderer.sprite);
+            float baseScale = LevelLoader.GetStationVisualScale(_visualRenderer.sprite, stationType);
             if (overload)
             {
                 float freq = 4f + fill * 22f;
