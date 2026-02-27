@@ -12,10 +12,10 @@ public interface ILineManager
     Vector3 GetTangentOnLine(Line line, int segmentIndex, float progressOnSegment);
     /// <summary>Tries to remove an end segment. Returns true if successful.</summary>
     bool TryRemoveEndSegment(Line line, int segmentIndex);
-    /// <summary>Gets the segment under the given world position. Returns (line, segmentIndex) or null.</summary>
-    (Line line, int segmentIndex)? GetSegmentUnderMouse(Vector2 worldPosition, float hitRadius);
+    /// <summary>Gets the segment under the given world position. Returns (line, segmentIndex) or null. If endSegmentsOnly=true, only checks end segments (first or last).</summary>
+    (Line line, int segmentIndex)? GetSegmentUnderMouse(Vector2 worldPosition, float hitRadius, bool endSegmentsOnly = false);
     /// <summary>Inserts a station into the middle of the given segment.</summary>
     bool InsertStationIntoLine(Line line, int segmentIndex, StationBehaviour newStation);
-    /// <summary>Sets segment highlight with pulse effect.</summary>
-    void SetSegmentHighlight(Line line, int segmentIndex, bool highlighted);
+    /// <summary>Sets segment highlight. pulse=true for editing state (continuous scaling), pulse=false for hover (static).</summary>
+    void SetSegmentHighlight(Line line, int segmentIndex, bool highlighted, bool pulse = false);
 }

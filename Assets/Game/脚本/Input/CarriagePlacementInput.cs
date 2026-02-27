@@ -29,6 +29,7 @@ public class CarriagePlacementInput : MonoBehaviour
         if (lm == null) return;
         if (!lm.TryUseCarriage(ship)) return;
 
+        ship.PlayUpgradeAnimation();
         ship.ApplyVisual();
         GameplayUIController.Instance.TryTransition(GameplayUIState.Idle);
         UIManager.Hide<CarriagePlacementPanel>();

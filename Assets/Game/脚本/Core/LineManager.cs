@@ -186,8 +186,8 @@ public class LineManager : MonoBehaviour, ILineManager
         return true;
     }
 
-    /// <summary>Gets the segment under the given world position. Returns (line, segmentIndex) or null.</summary>
-    public (Line line, int segmentIndex)? GetSegmentUnderMouse(Vector2 worldPosition, float hitRadius)
+    /// <summary>Gets the segment under the given world position. Returns (line, segmentIndex) or null. If endSegmentsOnly=true, only checks end segments (first or last).</summary>
+    public (Line line, int segmentIndex)? GetSegmentUnderMouse(Vector2 worldPosition, float hitRadius, bool endSegmentsOnly = false)
     {
         var world2D = worldPosition;
         Line bestLine = null;
@@ -199,8 +199,12 @@ public class LineManager : MonoBehaviour, ILineManager
             var pts = GetRawVertexPositions(line);
             if (pts == null || pts.Count < 2) continue;
 
+            int lastSegmentIdx = pts.Count - 2;
+
             for (int i = 0; i < pts.Count - 1; i++)
             {
+                if (endSegmentsOnly && i != 0 && i != lastSegmentIdx) continue;
+
                 float d = GetMinDistanceToSegment(pts, i, world2D);
                 if (d < bestDist && d <= hitRadius)
                 {
@@ -366,6 +370,23 @@ public class LineManager : MonoBehaviour, ILineManager
         return true;
     }
 
+    /// <summary>移除指定颜色的整条线路。成功返回 true。</summary>
+    public bool TryRemoveLineByColor(LineColor color)
+    {
+        Line toRemove = null;
+        foreach (var line in _lines)
+        {
+            if (line.color == color)
+            {
+                toRemove = line;
+                break;
+            }
+        }
+        if (toRemove == null) return false;
+        RemoveLine(toRemove);
+        return true;
+    }
+
     /// <summary>Removes the entire line (when only one station remains). Destroys all ships and releases the visual.</summary>
     private void RemoveLine(Line line)
     {
@@ -395,8 +416,8 @@ public class LineManager : MonoBehaviour, ILineManager
         }
     }
 
-    /// <summary>Sets segment highlight with pulse effect. When highlighted, shows overlay; when not, hides it.</summary>
-    public void SetSegmentHighlight(Line line, int segmentIndex, bool highlighted)
+    /// <summary>Sets segment highlight. pulse=true for editing state (continuous scaling), pulse=false for hover (static).</summary>
+    public void SetSegmentHighlight(Line line, int segmentIndex, bool highlighted, bool pulse = false)
     {
         if (line == null) return;
 
@@ -460,9 +481,8 @@ public class LineManager : MonoBehaviour, ILineManager
                         highlightLr.SetPosition(i, smoothPts[i]);
 
                     Color c = GetColorForLine(line.color);
-                    float pulse = 1f + 0.3f * Mathf.Sin(Time.time * 8f);
                     float baseWidth = 0.15f;
-                    float w = baseWidth * pulse;
+                    float w = pulse ? baseWidth * (1f + 0.3f * Mathf.Sin(Time.time * 8f)) : baseWidth * 1.15f;
                     highlightLr.startWidth = highlightLr.endWidth = w;
                     Color brightColor = new Color(
                         Mathf.Min(1f, c.r * 1.5f),

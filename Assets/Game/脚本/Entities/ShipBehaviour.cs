@@ -34,6 +34,19 @@ public class ShipBehaviour : MonoBehaviour
     private bool _dockProcessed;
     private bool _initialDockDone;
 
+    [Header("悬停高亮")]
+    private bool _highlighted;
+    private static readonly Color HighlightColor = new Color(1f, 1f, 0.85f, 0.4f);
+    [SerializeField] private float _hoverScale = 1.5f;
+    private float _hoverScaleProgress = 1f;
+    private float _hoverScaleDuration = 0.15f;
+
+    [Header("升级动画")]
+    private float _upgradeAnimProgress = 1f;
+    [SerializeField] private float _upgradeAnimDuration = 0.3f;
+    [SerializeField] private float _upgradePopScale = 1.2f;
+    [SerializeField] private float _upgradeShakeAmount = 8f;
+
     private static Sprite _placeholderShipSprite;
     private static Material _shipMaterial;
     private static readonly int ColorId = Shader.PropertyToID("_Color");
@@ -61,6 +74,66 @@ public class ShipBehaviour : MonoBehaviour
         var c = gameObject.AddComponent<CircleCollider2D>();
         c.radius = 0.6f;
         c.isTrigger = true;
+    }
+
+    private void OnMouseEnter()
+    {
+        if (!IsInPlacementMode()) return;
+        _highlighted = true;
+        _hoverScaleProgress = 0f;
+        ApplyHighlight();
+    }
+
+    private void OnMouseExit()
+    {
+        if (!_highlighted) return;
+        _highlighted = false;
+        _hoverScaleProgress = 0f;
+        ApplyHighlight();
+        ResetScale();
+    }
+
+    private void ResetScale()
+    {
+        float scaleByCapacity = 1f + (capacity - 4) * 0.08f;
+        transform.localScale = new Vector3(1f * scaleByCapacity, 0.5f * scaleByCapacity, 1f);
+    }
+
+    private bool IsInPlacementMode()
+    {
+        return GameplayUIController.Instance != null
+            && GameplayUIController.Instance.CurrentState == GameplayUIState.PlacingCarriage;
+    }
+
+    private void ApplyHighlight()
+    {
+        var sr = GetComponentInChildren<SpriteRenderer>();
+        if (sr == null) return;
+        sr.color = _highlighted ? HighlightColor : GetShipDisplayColor();
+    }
+
+    private void ApplyHoverScale()
+    {
+        float scaleByCapacity = 1f + (capacity - 4) * 0.08f;
+        float hoverScale = _highlighted 
+            ? Mathf.Lerp(1f, _hoverScale, _hoverScaleProgress) 
+            : Mathf.Lerp(_hoverScale, 1f, _hoverScaleProgress);
+        transform.localScale = new Vector3(1f * scaleByCapacity * hoverScale, 0.5f * scaleByCapacity * hoverScale, 1f);
+    }
+
+    /// <summary>升级成功时播放放大回弹+摇晃动画。</summary>
+    public void PlayUpgradeAnimation()
+    {
+        _upgradeAnimProgress = 0f;
+    }
+
+    private Color GetShipDisplayColor()
+    {
+        if (line == null) return Color.white;
+        if (line.displayColor != default(Color))
+            return new Color(line.displayColor.r, line.displayColor.g, line.displayColor.b, 1f);
+        Color lineColor = ResolveLineColor(line.color);
+        return new Color(lineColor.r, lineColor.g, lineColor.b, 1f);
     }
 
     #region 视觉 (Visual)
@@ -91,10 +164,14 @@ public class ShipBehaviour : MonoBehaviour
         }
 
         float scaleByCapacity = 1f + (capacity - 4) * 0.08f;
-        transform.localScale = new Vector3(1f * scaleByCapacity, 0.5f * scaleByCapacity, 1f);
+        if (_upgradeAnimProgress >= 1f && !_highlighted)
+        {
+            transform.localScale = new Vector3(1f * scaleByCapacity, 0.5f * scaleByCapacity, 1f);
+        }
 
         EnsureCarriageIndicators();
         RefreshPassengerPositionsOnShip();
+        if (_highlighted) ApplyHighlight();
     }
 
     /// <summary>客舱升级视觉：在飞船后方显示小圆点，每个客舱+2 显示 1 个。</summary>
@@ -137,12 +214,12 @@ public class ShipBehaviour : MonoBehaviour
     public void RefreshPassengerPositionsOnShip()
     {
         var shipScale = transform.localScale;
-        float uniformWorldScale = 0.35f;
+        float uniformWorldScale = 0.23f;
         float px = uniformWorldScale / Mathf.Max(0.001f, shipScale.x);
         float py = uniformWorldScale / Mathf.Max(0.001f, shipScale.y);
         float pz = uniformWorldScale / Mathf.Max(0.001f, shipScale.z);
 
-        float dockOffsetX = (state == ShipState.Docked) ? -0.25f : 0f;
+        float dockOffsetX = (state == ShipState.Docked) ? -0.1f : 0f;
 
         for (int i = 0; i < passengers.Count; i++)
         {
@@ -154,8 +231,8 @@ public class ShipBehaviour : MonoBehaviour
             p.gameObject.SetActive(true);
             float row = i / 4;
             float col = i % 4;
-            float x = (col - 1.5f) * 0.22f + dockOffsetX;
-            float y = 0.3f + row * 0.2f;
+            float x = (col - 1.5f) * 0.25f + 0.05f;
+            float y = - row * 0.45f + 0.1f;
             p.transform.localPosition = new Vector3(x, y, -0.05f);
             p.transform.localScale = new Vector3(px, py, pz);
             var iconSr = p.GetComponentInChildren<SpriteRenderer>();
@@ -167,7 +244,7 @@ public class ShipBehaviour : MonoBehaviour
                 iconSr.transform.localScale = Vector3.one;
                 if (iconSr.sprite == null)
                     iconSr.sprite = Passenger.GetPlaceholderShapeSpriteForShip();
-                iconSr.color = new Color(0.85f, 0.85f, 0.95f, 1f);
+                iconSr.color = new Color(0.85f, 0.85f, 0.95f, 0.5f);
             }
         }
     }
@@ -329,6 +406,53 @@ public class ShipBehaviour : MonoBehaviour
             UpdateMoving();
         else
             UpdateDocked();
+
+        if (!IsInPlacementMode() && _highlighted)
+        {
+            _highlighted = false;
+            _hoverScaleProgress = 0f;
+            ApplyHighlight();
+            ResetScale();
+        }
+
+        if (_hoverScaleProgress < 1f && _highlighted)
+        {
+            _hoverScaleProgress += Time.deltaTime / _hoverScaleDuration;
+            if (_hoverScaleProgress > 1f) _hoverScaleProgress = 1f;
+        }
+
+        if (_upgradeAnimProgress >= 1f && _highlighted)
+        {
+            ApplyHoverScale();
+        }
+
+        if (_upgradeAnimProgress < 1f)
+        {
+            _upgradeAnimProgress += Time.deltaTime / _upgradeAnimDuration;
+            if (_upgradeAnimProgress > 1f) _upgradeAnimProgress = 1f;
+            ApplyUpgradeAnim();
+        }
+    }
+
+    private void ApplyUpgradeAnim()
+    {
+        float t = _upgradeAnimProgress;
+        float scale = 1f;
+        if (t < 0.3f)
+            scale = Mathf.Lerp(1f, _upgradePopScale, t / 0.3f);
+        else if (t < 0.6f)
+            scale = Mathf.Lerp(_upgradePopScale, 0.95f, (t - 0.3f) / 0.3f);
+        else
+            scale = Mathf.Lerp(0.95f, 1f, (t - 0.6f) / 0.4f);
+
+        float shake = Mathf.Sin(t * Mathf.PI * 8) * _upgradeShakeAmount * (1f - t);
+
+        float scaleByCapacity = 1f + (capacity - 4) * 0.08f;
+        var baseScale = new Vector3(1f, 0.5f, 1f) * scaleByCapacity;
+        transform.localScale = baseScale * scale;
+
+        float baseAngle = transform.eulerAngles.z;
+        transform.eulerAngles = new Vector3(0f, 0f, baseAngle + shake);
     }
 
     private void LateUpdate()

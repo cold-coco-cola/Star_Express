@@ -1,0 +1,206 @@
+# Unity Game Development Rules
+
+## 开发哲学
+
+### 优先创建游戏对象
+- 在场景/预制体中创建游戏对象，而非纯运行时实例化
+- 设计师可以在编辑器中手动调整位置
+- 使用 `[SerializeField]` 而非 `Find` 来获取引用
+- 避免硬编码位置
+
+### 尽量少用编辑器脚本
+- 不创建菜单栏扩展
+- 使用 MonoBehaviour 的 Awake/Start 进行初始化
+- 使用 ScriptableObject 进行配置
+- 保持简单直接的实现
+
+### 先确定根源再操作
+- 逻辑 bug 往往有微妙的原因
+- 追踪完整流程后再做修改
+- 理解边界情况（回路、空状态等）
+- 修复根本原因，而非症状
+
+### 修改后清理废弃文件
+- 重构后删除旧脚本
+- 移除未使用的资源
+- 保持项目结构整洁
+
+---
+
+## 直接修复模式 (unity-direct-fix)
+
+当用户报告 bug 或要求修复问题时：
+
+### 工作流程
+1. 使用搜索工具定位相关代码
+2. 阅读相关文件理解问题根源
+3. 直接修改代码，不询问确认
+4. 删除废弃文件（如有）
+5. 检查相关问题
+
+### 用户偏好
+- 直接修改代码，不写提示词
+- 不问太多问题，合理假设后直接执行
+- 找到根本原因后立即修复
+- 只有明确要求时才解释，不修改文件
+
+### 响应格式
+```
+根本原因: [问题的根源]
+
+修复于 [文件名]:
+- [修改内容]
+
+删除: [废弃文件] (如有)
+```
+
+---
+
+## 场景持久化模式 (unity-scene-persistence)
+
+处理 DontDestroyOnLoad 和场景切换问题：
+
+### 常见问题修复
+
+#### 1. UI 跨场景残留
+```csharp
+private void HideNonLevelPopups()
+{
+    var pauseMenu = FindObjectOfType<PauseMenu>(true);
+    if (pauseMenu != null) pauseMenu.Hide();
+}
+```
+
+#### 2. 事件监听器失效
+```csharp
+// 每次场景加载时重新绑定
+btn.onClick.RemoveAllListeners();
+btn.onClick.AddListener(() => { /* handler */ });
+```
+
+#### 3. 弹窗未隐藏
+```csharp
+private void OnBackToMenu()
+{
+    Hide();  // 必须在 LoadScene 之前调用
+    SceneManager.LoadScene(sceneName);
+}
+```
+
+#### 4. 组件缺失检查
+```csharp
+if (existing.continueButton == null || existing.backToMenuButton == null)
+{
+    DestroyImmediate(existing.gameObject);
+    // 重新创建
+}
+```
+
+### 场景切换检查清单
+- [ ] LoadScene 前隐藏所有弹窗
+- [ ] 销毁 GameManager（如需要）
+- [ ] 新场景中重新绑定按钮监听器
+- [ ] 检查过时的 UI 引用
+- [ ] 重置静态状态
+
+---
+
+## 游戏逻辑模式 (unity-game-logic)
+
+实现游戏逻辑时的模式：
+
+### 状态机模式
+```csharp
+public enum PassengerState { Waiting, OnShip, Arrived }
+
+public void BoardShip()
+{
+    if (State != PassengerState.Waiting) return;
+    State = PassengerState.OnShip;
+}
+```
+
+### 操作前验证
+```csharp
+public bool TryRemoveSegment(int segmentIndex)
+{
+    if (stationSequence == null || stationSequence.Count < 2) return false;
+    if (segmentIndex < 0 || segmentIndex >= stationSequence.Count - 1) return false;
+    // 然后修改
+    return true;
+}
+```
+
+### 边界情况处理
+```csharp
+public bool IsEndSegment(int segmentIndex)
+{
+    if (segmentIndex == 0 || segmentIndex == stationSequence.Count - 2)
+        return true;
+    if (IsLoop()) return true;  // 回路特殊情况
+    return false;
+}
+
+public bool IsLoop()
+{
+    if (stationSequence == null || stationSequence.Count < 3) return false;
+    return stationSequence[0] == stationSequence[stationSequence.Count - 1];
+}
+```
+
+### 线路管理
+- 回路不能被延长
+- 回路段删除需要特殊处理（从断点重新排列）
+
+### 乘客运输逻辑
+1. 先下客（目的地乘客）
+2. 再下客（换乘乘客）
+3. 最后上客（直达优先）
+
+### BFS 寻路
+```csharp
+public static bool CanReachStation(StationBehaviour from, StationBehaviour to, LineColor lineColor)
+{
+    var visited = new HashSet<StationBehaviour>();
+    var queue = new Queue<StationBehaviour>();
+    queue.Enqueue(from);
+    visited.Add(from);
+    
+    while (queue.Count > 0)
+    {
+        var current = queue.Dequeue();
+        if (current == to) return true;
+        foreach (var neighbor in GetConnectedStations(current, lineColor))
+            if (!visited.Contains(neighbor))
+            {
+                visited.Add(neighbor);
+                queue.Enqueue(neighbor);
+            }
+    }
+    return false;
+}
+```
+
+---
+
+## 项目特定约定
+
+### Line 类
+- `stationSequence` - 站点序列
+- `IsLoop()` - 检测回路
+- `IsEndSegment(index)` - 检测端点段
+- `GetEndStationOfSegment(index)` - 获取端点站
+
+### ShipBehaviour
+- `ProcessDocking()` - 处理靠站
+- `MoveAlongLine()` - 移动
+
+### StationBehaviour
+- `waitingPassengers` - 等待乘客
+- `GeneratePassenger()` - 生成乘客
+- `shape` - 站点形状
+
+### ScriptableObject 配置
+- `LevelConfig` - 关卡配置
+- `GameBalance` - 平衡配置
+- `VisualConfig` - 视觉配置

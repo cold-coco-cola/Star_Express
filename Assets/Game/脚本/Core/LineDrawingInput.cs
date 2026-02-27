@@ -14,7 +14,7 @@ public class LineDrawingInput : MonoBehaviour
 
     [Header("线段编辑")]
     [Tooltip("Mouse hit radius for segment detection")]
-    [SerializeField] private float _segmentHitRadius = 0.8f;
+    [SerializeField] private float _segmentHitRadius = 0.5f;
 
     private enum State { Idle, FirstSelected }
     private State _state = State.Idle;
@@ -93,7 +93,7 @@ public class LineDrawingInput : MonoBehaviour
 
         if (_editingLine != null)
         {
-            lineManager.SetSegmentHighlight(_editingLine, _editingSegmentIndex, true);
+            lineManager.SetSegmentHighlight(_editingLine, _editingSegmentIndex, true, true);
             return;
         }
 
@@ -101,20 +101,13 @@ public class LineDrawingInput : MonoBehaviour
         if (hit.HasValue)
         {
             var (line, segIdx) = hit.Value;
-            if (line.IsEndSegment(segIdx))
-            {
-                if (_hoveredLine != line || _hoveredSegmentIndex != segIdx)
-                {
-                    ClearHoverHighlight();
-                    _hoveredLine = line;
-                    _hoveredSegmentIndex = segIdx;
-                }
-                lineManager.SetSegmentHighlight(line, segIdx, true);
-            }
-            else
+            if (_hoveredLine != line || _hoveredSegmentIndex != segIdx)
             {
                 ClearHoverHighlight();
+                _hoveredLine = line;
+                _hoveredSegmentIndex = segIdx;
             }
+            lineManager.SetSegmentHighlight(line, segIdx, true);
         }
         else
         {
@@ -179,7 +172,7 @@ public class LineDrawingInput : MonoBehaviour
             ClearHighlightAndReset();
             _editingLine = line;
             _editingSegmentIndex = segIdx;
-            lineManager.SetSegmentHighlight(line, segIdx, true);
+            lineManager.SetSegmentHighlight(line, segIdx, true, true);
             GameplayAudio.Instance?.PlayGeneralClick();
             if (debugLog) Debug.Log("[连线输入] 进入线段编辑: " + line.id + " seg=" + segIdx);
         }

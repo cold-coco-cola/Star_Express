@@ -55,6 +55,7 @@ public static class AutoSetupGameUI
         changed |= EnsureColorPickPanel(canvas.transform);
         changed |= EnsureShipPlacementFanPanelHeight(canvas.transform);
         changed |= EnsureCarriagePlacementPanel(canvas.transform);
+        changed |= EnsureLineStatusPanel(canvas.transform);
         changed |= EnsureWeekRewardSelectionPopup(canvas.transform);
         changed |= EnsureGameOverPopup(canvas.transform);
         changed |= GameplayUISetup.AddContinueButtonIfMissing();
@@ -79,6 +80,8 @@ public static class AutoSetupGameUI
         cleaned |= RemoveDuplicateChildren(canvasGo.transform, "ResourcePanel");
         cleaned |= RemoveDuplicateChildren(canvasGo.transform, "ColorPickPanel");
         cleaned |= RemoveDuplicateChildren(canvasGo.transform, "CarriagePlacementPanel");
+        cleaned |= RemoveDuplicateChildren(canvasGo.transform, "LineStatusPanel");
+        cleaned |= RemoveDuplicateChildren(canvasGo.transform, "LineStatusCancelOverlay");
         cleaned |= RemoveDuplicateChildren(canvasGo.transform, "WeekRewardPopup");
         cleaned |= RemoveDuplicateChildren(canvasGo.transform, "WeekRewardSelectionPopup");
         cleaned |= RemoveLegacyWeekRewardPopup(canvasGo.transform);
@@ -686,6 +689,79 @@ public static class AutoSetupGameUI
         }
     }
 
+    private static bool EnsureLineStatusPanel(Transform parent)
+    {
+        if (parent.Find("LineStatusPanel") != null) return false;
+        if (Object.FindObjectOfType<LineStatusPanel>() != null) return false;
+
+        const float circleSize = 36f;
+        const float spacing = 10f;
+        const float pad = 12f;
+
+        var cancelOverlay = MakeRect(parent, "LineStatusCancelOverlay");
+        cancelOverlay.transform.SetAsFirstSibling();
+        var coRt = cancelOverlay.GetComponent<RectTransform>();
+        coRt.anchorMin = Vector2.zero;
+        coRt.anchorMax = Vector2.one;
+        coRt.offsetMin = coRt.offsetMax = Vector2.zero;
+        var coImg = cancelOverlay.AddComponent<Image>();
+        coImg.color = new Color(0, 0, 0, 0.01f);
+        coImg.raycastTarget = true;
+        var coBtn = cancelOverlay.AddComponent<Button>();
+        cancelOverlay.SetActive(false);
+
+        var panel = MakeRect(parent, "LineStatusPanel");
+        var pr = panel.GetComponent<RectTransform>();
+        pr.anchorMin = new Vector2(1f, 0.5f);
+        pr.anchorMax = new Vector2(1f, 0.5f);
+        pr.pivot = new Vector2(1f, 0.5f);
+        pr.anchoredPosition = new Vector2(-pad, 0);
+        pr.sizeDelta = new Vector2(circleSize + pad * 2, circleSize * 6 + spacing * 5 + pad * 2);
+
+        var bg = panel.AddComponent<Image>();
+        bg.color = new Color(0.04f, 0.06f, 0.1f, 0.92f);
+        bg.raycastTarget = true;
+        var outline = panel.AddComponent<Outline>();
+        outline.effectColor = new Color(0.2f, 0.25f, 0.35f, 0.6f);
+        outline.effectDistance = new Vector2(-1, 0);
+
+        var colors = new[] { LineColor.Red, LineColor.Green, LineColor.Blue, LineColor.Yellow, LineColor.Cyan, LineColor.Magenta };
+        Image[] circleImages = new Image[6];
+
+        for (int i = 0; i < 6; i++)
+        {
+            var circle = MakeRect(panel.transform, "Circle_" + i);
+            var cr = circle.GetComponent<RectTransform>();
+            cr.anchorMin = new Vector2(0.5f, 1f);
+            cr.anchorMax = new Vector2(0.5f, 1f);
+            cr.pivot = new Vector2(0.5f, 0.5f);
+            cr.anchoredPosition = new Vector2(0, -pad - circleSize * 0.5f - i * (circleSize + spacing));
+            cr.sizeDelta = new Vector2(circleSize * 0.7f, circleSize * 0.7f);
+
+            var cImg = circle.AddComponent<Image>();
+            cImg.color = new Color(0.4f, 0.4f, 0.45f, 0.6f);
+            cImg.raycastTarget = true;
+            circleImages[i] = cImg;
+
+            var item = circle.AddComponent<LineStatusCircleItem>();
+            var so = new SerializedObject(item);
+            so.FindProperty("_lineColor").enumValueIndex = (int)colors[i];
+            so.ApplyModifiedProperties();
+        }
+
+        var comp = panel.AddComponent<LineStatusPanel>();
+        var compSo = new SerializedObject(comp);
+        compSo.FindProperty("panelRoot").objectReferenceValue = panel;
+        compSo.FindProperty("_circleImages").arraySize = 6;
+        for (int i = 0; i < 6; i++)
+            compSo.FindProperty("_circleImages").GetArrayElementAtIndex(i).objectReferenceValue = circleImages[i];
+        compSo.FindProperty("_cancelOverlay").objectReferenceValue = coBtn;
+        compSo.ApplyModifiedProperties();
+
+        comp.Show();
+        return true;
+    }
+
     private static bool EnsureCarriagePlacementPanel(Transform parent)
     {
         if (parent.Find("CarriagePlacementPanel") != null) return false;
@@ -723,54 +799,115 @@ public static class AutoSetupGameUI
 
     private static bool EnsureWeekRewardSelectionPopup(Transform parent)
     {
-        if (parent.Find("WeekRewardSelectionPopup") != null) return false;
+        var existing = parent.Find("WeekRewardSelectionPopup");
+        if (existing != null)
+        {
+            var existingComp = existing.GetComponent<WeekRewardSelectionPopup>();
+            if (existingComp != null && existingComp.option1Icon != null) return false;
+            Undo.DestroyObjectImmediate(existing.gameObject);
+        }
         if (Object.FindObjectOfType<WeekRewardSelectionPopup>() != null) return false;
 
+        var layout = GetRewardPopupLayout();
         var panel = MakeRect(parent, "WeekRewardSelectionPopup");
         var pr = panel.GetComponent<RectTransform>();
         pr.anchorMin = pr.anchorMax = new Vector2(0.5f, 0.5f);
-        pr.sizeDelta = new Vector2(420, 280);
+        pr.sizeDelta = layout.panelSize;
         pr.anchoredPosition = Vector2.zero;
         var bg = panel.AddComponent<Image>();
         bg.color = new Color(0.06f, 0.08f, 0.12f, 0.98f);
         bg.raycastTarget = true;
 
-        var weekT = MakeText(panel.transform, "WeekText", "第 1 周", new Vector2(0, 80), new Vector2(380, 36));
+        var weekT = MakeText(panel.transform, "WeekText", "第 1 周", new Vector2(0, layout.panelSize.y * 0.35f), new Vector2(layout.panelSize.x - 40, 36));
         weekT.alignment = TextAnchor.MiddleCenter;
         weekT.fontSize = 26;
-        var hintT = MakeText(panel.transform, "HintText", "选择 1 项奖励", new Vector2(0, 40), new Vector2(380, 24));
+        var hintT = MakeText(panel.transform, "HintText", "选择 1 项奖励", new Vector2(0, layout.panelSize.y * 0.22f), new Vector2(layout.panelSize.x - 40, 24));
         hintT.alignment = TextAnchor.MiddleCenter;
 
-        float optY = -20, optW = 140, optH = 50, gap = 20;
-        var opt1 = MakeRect(panel.transform, "Option1");
-        opt1.GetComponent<RectTransform>().anchoredPosition = new Vector2(-optW * 0.5f - gap * 0.5f, optY);
-        opt1.GetComponent<RectTransform>().sizeDelta = new Vector2(optW, optH);
-        opt1.AddComponent<Image>().color = new Color(0.25f, 0.3f, 0.38f);
-        var o1 = opt1.AddComponent<Button>();
-        var o1Label = MakeText(opt1.transform, "Label", "客舱", Vector2.zero, new Vector2(120, 40));
-        o1Label.alignment = TextAnchor.MiddleCenter;
-
-        var opt2 = MakeRect(panel.transform, "Option2");
-        opt2.GetComponent<RectTransform>().anchoredPosition = new Vector2(optW * 0.5f + gap * 0.5f, optY);
-        opt2.GetComponent<RectTransform>().sizeDelta = new Vector2(optW, optH);
-        opt2.AddComponent<Image>().color = new Color(0.25f, 0.3f, 0.38f);
-        var o2 = opt2.AddComponent<Button>();
-        var o2Label = MakeText(opt2.transform, "Label", "星隧", Vector2.zero, new Vector2(120, 40));
-        o2Label.alignment = TextAnchor.MiddleCenter;
+        float optY = -20;
+        var (o1, icon1, desc1, name1) = MakeRewardOptionCard(panel.transform, "Option1", new Vector2(-layout.buttonSize.x * 0.5f - layout.buttonGap * 0.5f, optY), layout.buttonSize);
+        var (o2, icon2, desc2, name2) = MakeRewardOptionCard(panel.transform, "Option2", new Vector2(layout.buttonSize.x * 0.5f + layout.buttonGap * 0.5f, optY), layout.buttonSize);
 
         var comp = panel.AddComponent<WeekRewardSelectionPopup>();
         var so = new SerializedObject(comp);
         so.FindProperty("weekText").objectReferenceValue = weekT;
         so.FindProperty("hintText").objectReferenceValue = hintT;
         so.FindProperty("option1Button").objectReferenceValue = o1;
-        so.FindProperty("option1Label").objectReferenceValue = o1Label;
+        so.FindProperty("option1Label").objectReferenceValue = name1;
+        so.FindProperty("option1Desc").objectReferenceValue = desc1;
+        so.FindProperty("option1Icon").objectReferenceValue = icon1;
         so.FindProperty("option2Button").objectReferenceValue = o2;
-        so.FindProperty("option2Label").objectReferenceValue = o2Label;
+        so.FindProperty("option2Label").objectReferenceValue = name2;
+        so.FindProperty("option2Desc").objectReferenceValue = desc2;
+        so.FindProperty("option2Icon").objectReferenceValue = icon2;
         so.ApplyModifiedProperties();
         AddButtonClickAnim(o1, o2);
         panel.AddComponent<PopupShowAnim>();
         panel.SetActive(false);
         return true;
+    }
+
+    private static (Vector2 panelSize, Vector2 buttonSize, float buttonGap) GetRewardPopupLayout()
+    {
+        var vc = UnityEditor.AssetDatabase.LoadAssetAtPath<VisualConfig>("Assets/Game/配置/VisualConfig.asset");
+        if (vc != null && vc.rewardPopupLayout.panelSize.x > 0)
+            return (vc.rewardPopupLayout.panelSize, vc.rewardPopupLayout.buttonSize, vc.rewardPopupLayout.buttonGap);
+        return (new Vector2(480, 400), new Vector2(180, 200), 30f);
+    }
+
+    /// <summary>肉鸽风格奖励卡片：背景 → 图标(60-65%) → 描述(15-20%) → 名称(20%)。</summary>
+    private static (Button button, Image iconImage, Text descText, Text nameText) MakeRewardOptionCard(Transform parent, string name, Vector2 pos, Vector2 size)
+    {
+        var go = MakeRect(parent, name);
+        var r = go.GetComponent<RectTransform>();
+        r.anchorMin = r.anchorMax = new Vector2(0.5f, 0.5f);
+        r.pivot = new Vector2(0.5f, 0.5f);
+        r.anchoredPosition = pos;
+        r.sizeDelta = size;
+
+        var bgImg = go.AddComponent<Image>();
+        bgImg.color = new Color(0.18f, 0.2f, 0.28f, 0.98f);
+        bgImg.raycastTarget = true;
+        var btn = go.AddComponent<Button>();
+        btn.targetGraphic = bgImg;
+
+        var iconGo = MakeRect(go.transform, "Icon");
+        var iconRt = iconGo.GetComponent<RectTransform>();
+        iconRt.anchorMin = new Vector2(0, 0.35f);
+        iconRt.anchorMax = new Vector2(1, 1);
+        iconRt.offsetMin = new Vector2(8, 8);
+        iconRt.offsetMax = new Vector2(-8, -8);
+        var iconImg = iconGo.AddComponent<Image>();
+        iconImg.color = new Color(0.3f, 0.35f, 0.45f);
+        iconImg.raycastTarget = false;
+
+        var descGo = MakeRect(go.transform, "DescText");
+        var descRt = descGo.GetComponent<RectTransform>();
+        descRt.anchorMin = new Vector2(0, 0.2f);
+        descRt.anchorMax = new Vector2(1, 0.35f);
+        descRt.offsetMin = new Vector2(6, 2);
+        descRt.offsetMax = new Vector2(-6, -2);
+        var descTxt = descGo.AddComponent<Text>();
+        descTxt.text = "";
+        descTxt.font = GameUIFonts.Default;
+        descTxt.fontSize = 12;
+        descTxt.alignment = TextAnchor.MiddleCenter;
+        descTxt.color = new Color(0.85f, 0.88f, 0.92f);
+
+        var nameGo = MakeRect(go.transform, "NameText");
+        var nameRt = nameGo.GetComponent<RectTransform>();
+        nameRt.anchorMin = Vector2.zero;
+        nameRt.anchorMax = new Vector2(1, 0.2f);
+        nameRt.offsetMin = new Vector2(6, 2);
+        nameRt.offsetMax = new Vector2(-6, -2);
+        var nameTxt = nameGo.AddComponent<Text>();
+        nameTxt.text = "";
+        nameTxt.font = GameUIFonts.Default;
+        nameTxt.fontSize = 16;
+        nameTxt.alignment = TextAnchor.MiddleCenter;
+        nameTxt.color = Color.white;
+
+        return (btn, iconImg, descTxt, nameTxt);
     }
 
     private static bool EnsureGameOverPopup(Transform parent)

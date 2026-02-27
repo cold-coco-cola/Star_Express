@@ -7,9 +7,10 @@ using UnityEngine.EventSystems;
 /// 挂到 Button 上即可生效。面板关闭时自动回弹，避免色块卡在缩小状态。
 /// </summary>
 [RequireComponent(typeof(Button))]
-public class ButtonClickAnim : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IPointerExitHandler
+public class ButtonClickAnim : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IPointerExitHandler, IPointerEnterHandler
 {
     [SerializeField] private float _pressScale = 0.88f;
+    [SerializeField] private float _hoverScale = 1.05f;
     [SerializeField] private float _animDuration = 0.12f;
     [SerializeField] private float _releaseOvershoot = 1.04f;
 
@@ -48,7 +49,18 @@ public class ButtonClickAnim : MonoBehaviour, IPointerDownHandler, IPointerUpHan
 
     public void OnPointerExit(PointerEventData eventData)
     {
-        OnPointerUp(eventData);
+        if (_rect == null) return;
+        _t = 0f;
+        StopAllCoroutines();
+        StartCoroutine(AnimateTo(1f));
+    }
+
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        if (_rect == null) return;
+        _t = 0f;
+        StopAllCoroutines();
+        StartCoroutine(AnimateTo(_hoverScale));
     }
 
     private System.Collections.IEnumerator AnimateTo(float targetScale)

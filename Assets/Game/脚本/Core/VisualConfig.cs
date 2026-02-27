@@ -1,5 +1,13 @@
 using UnityEngine;
 
+[System.Serializable]
+public struct RewardPopupLayout
+{
+    public Vector2 panelSize;
+    public Vector2 buttonSize;
+    public float buttonGap;
+}
+
 [CreateAssetMenu(fileName = "VisualConfig", menuName = "Star Express/Visual Config", order = 2)]
 public class VisualConfig : ScriptableObject
 {
@@ -11,4 +19,10 @@ public class VisualConfig : ScriptableObject
     public Sprite shipSprite;
     [Tooltip("乘客身体表现")]
     public Sprite passengerSprite;
+
+    [Tooltip("奖励选择界面图标，顺序: Carriage, StarTunnel, NewLine")]
+    public Sprite[] rewardIcons;
+
+    [Tooltip("奖励选择界面布局，留空则用默认值(480x400, 180x200, 30)")]
+    public RewardPopupLayout rewardPopupLayout;
 }

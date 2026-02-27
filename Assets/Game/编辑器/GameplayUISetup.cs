@@ -10,7 +10,6 @@ using Game.Scripts.UI;
 /// </summary>
 public static class GameplayUISetup
 {
-    [MenuItem("Tools/Gameplay UI/Setup Game UI", false, 0)]
     public static void SetupGameUI()
     {
         EnsureGameCanvas();
@@ -22,7 +21,6 @@ public static class GameplayUISetup
         Debug.Log("[GameplayUISetup] Game UI setup complete!");
     }
 
-    [MenuItem("Tools/Gameplay UI/Create Pause Button", false, 1)]
     public static void EnsurePauseButton()
     {
         var canvas = EnsureGameCanvas();
@@ -82,7 +80,6 @@ public static class GameplayUISetup
         return true;
     }
 
-    [MenuItem("Tools/Gameplay UI/Add Missing Continue Button to Pause Menu", false, 2)]
     public static void AddMissingContinueButton()
     {
         if (AddContinueButtonIfMissing())
@@ -113,7 +110,6 @@ public static class GameplayUISetup
         return true;
     }
 
-    [MenuItem("Tools/Gameplay UI/Create Pause Menu", false, 3)]
     public static void EnsurePauseMenu()
     {
         var canvas = EnsureGameCanvas();
@@ -235,6 +231,10 @@ public static class GameplayUISetup
 
         var continueBtn = CreateMenuStyleButton(parent, "ContinueButton", "继续", continuePos, new Vector2(btnW, btnH));
         Undo.RegisterCreatedObjectUndo(continueBtn.gameObject, "Add Continue Button");
+        var menuBtn = continueBtn.GetComponent<MenuButton>();
+        if (menuBtn == null) menuBtn = continueBtn.gameObject.AddComponent<MenuButton>();
+        var textComp = continueBtn.GetComponentInChildren<Text>();
+        if (textComp != null) menuBtn.buttonText = textComp;
         if (continueBtn.GetComponent<GameplayButtonHoverSound>() == null)
             continueBtn.gameObject.AddComponent<GameplayButtonHoverSound>();
 
@@ -242,7 +242,6 @@ public static class GameplayUISetup
         pauseMenu.continueButton = continueBtn;
     }
 
-    [MenuItem("Tools/Gameplay UI/Create Game Over Popup", false, 4)]
     public static void EnsureGameOverPopup()
     {
         var canvas = EnsureGameCanvas();
@@ -291,7 +290,6 @@ public static class GameplayUISetup
         Debug.Log("[GameplayUISetup] Created GameOverPopup");
     }
 
-    [MenuItem("Tools/Gameplay UI/Create Week Reward Selection Popup", false, 5)]
     public static void EnsureWeekRewardSelectionPopup()
     {
         var canvas = EnsureGameCanvas();
@@ -310,27 +308,35 @@ public static class GameplayUISetup
 
         var pr = panel.AddComponent<RectTransform>();
         pr.anchorMin = pr.anchorMax = new Vector2(0.5f, 0.5f);
-        pr.sizeDelta = new Vector2(420, 280);
         pr.anchoredPosition = Vector2.zero;
 
         var bg = panel.AddComponent<Image>();
         bg.color = new Color(0.06f, 0.08f, 0.12f, 0.98f);
         bg.raycastTarget = true;
 
-        var weekT = CreateText(panel.transform, "WeekText", "第 1 周", new Vector2(0, 80), new Vector2(380, 36), 26);
-        var hintT = CreateText(panel.transform, "HintText", "选择 1 项奖励", new Vector2(0, 40), new Vector2(380, 24), 18);
+        var layout = new Vector2(480, 400);
+        var btnSize = new Vector2(180, 200);
+        var gap = 30f;
+        pr.sizeDelta = layout;
 
-        float optY = -20, optW = 140, optH = 50, gap = 20;
-        var opt1 = CreateOptionButton(panel.transform, "Option1", "客舱", new Vector2(-optW * 0.5f - gap * 0.5f, optY), new Vector2(optW, optH));
-        var opt2 = CreateOptionButton(panel.transform, "Option2", "星隧", new Vector2(optW * 0.5f + gap * 0.5f, optY), new Vector2(optW, optH));
+        var weekT = CreateText(panel.transform, "WeekText", "第 1 周", new Vector2(0, layout.y * 0.35f), new Vector2(layout.x - 40, 36), 26);
+        var hintT = CreateText(panel.transform, "HintText", "选择 1 项奖励", new Vector2(0, layout.y * 0.22f), new Vector2(layout.x - 40, 24), 18);
+
+        float optY = -20;
+        var (opt1, icon1, desc1, name1) = CreateRewardOptionCard(panel.transform, "Option1", new Vector2(-btnSize.x * 0.5f - gap * 0.5f, optY), btnSize);
+        var (opt2, icon2, desc2, name2) = CreateRewardOptionCard(panel.transform, "Option2", new Vector2(btnSize.x * 0.5f + gap * 0.5f, optY), btnSize);
 
         var comp = panel.AddComponent<WeekRewardSelectionPopup>();
         comp.weekText = weekT;
         comp.hintText = hintT;
         comp.option1Button = opt1;
-        comp.option1Label = opt1.GetComponentInChildren<Text>();
+        comp.option1Label = name1;
+        comp.option1Desc = desc1;
+        comp.option1Icon = icon1;
         comp.option2Button = opt2;
-        comp.option2Label = opt2.GetComponentInChildren<Text>();
+        comp.option2Label = name2;
+        comp.option2Desc = desc2;
+        comp.option2Icon = icon2;
 
         AddButtonClickAnim(opt1, opt2);
         opt1.gameObject.AddComponent<GameplayButtonHoverSound>();
@@ -342,7 +348,6 @@ public static class GameplayUISetup
         Debug.Log("[GameplayUISetup] Created WeekRewardSelectionPopup");
     }
 
-    [MenuItem("Tools/Gameplay UI/Create Color Pick Panel", false, 6)]
     public static void EnsureColorPickPanel()
     {
         var canvas = EnsureGameCanvas();
@@ -570,7 +575,7 @@ public static class GameplayUISetup
         return t;
     }
 
-    private static Button CreateOptionButton(Transform parent, string name, string label, Vector2 pos, Vector2 size)
+    private static (Button button, Image iconImage, Text descText, Text nameText) CreateRewardOptionCard(Transform parent, string name, Vector2 pos, Vector2 size)
     {
         var go = new GameObject(name);
         go.transform.SetParent(parent, false);
@@ -579,21 +584,53 @@ public static class GameplayUISetup
         r.pivot = new Vector2(0.5f, 0.5f);
         r.anchoredPosition = pos;
         r.sizeDelta = size;
-        go.AddComponent<Image>().color = new Color(0.25f, 0.3f, 0.38f);
+
+        var bgImg = go.AddComponent<Image>();
+        bgImg.color = new Color(0.18f, 0.2f, 0.28f, 0.98f);
+        bgImg.raycastTarget = true;
         var btn = go.AddComponent<Button>();
-        var labelGo = new GameObject("Label");
-        labelGo.transform.SetParent(go.transform, false);
-        var lr = labelGo.AddComponent<RectTransform>();
-        lr.anchorMin = Vector2.zero;
-        lr.anchorMax = Vector2.one;
-        lr.offsetMin = lr.offsetMax = Vector2.zero;
-        var txt = labelGo.AddComponent<Text>();
-        txt.text = label;
-        txt.font = GameUIFonts.Default;
-        txt.fontSize = 18;
-        txt.alignment = TextAnchor.MiddleCenter;
-        txt.color = Color.white;
-        return btn;
+        btn.targetGraphic = bgImg;
+
+        var iconGo = new GameObject("Icon");
+        iconGo.transform.SetParent(go.transform, false);
+        var iconRt = iconGo.AddComponent<RectTransform>();
+        iconRt.anchorMin = new Vector2(0, 0.35f);
+        iconRt.anchorMax = new Vector2(1, 1);
+        iconRt.offsetMin = new Vector2(8, 8);
+        iconRt.offsetMax = new Vector2(-8, -8);
+        var iconImg = iconGo.AddComponent<Image>();
+        iconImg.color = new Color(0.3f, 0.35f, 0.45f);
+        iconImg.raycastTarget = false;
+
+        var descGo = new GameObject("DescText");
+        descGo.transform.SetParent(go.transform, false);
+        var descRt = descGo.AddComponent<RectTransform>();
+        descRt.anchorMin = new Vector2(0, 0.2f);
+        descRt.anchorMax = new Vector2(1, 0.35f);
+        descRt.offsetMin = new Vector2(6, 2);
+        descRt.offsetMax = new Vector2(-6, -2);
+        var descTxt = descGo.AddComponent<Text>();
+        descTxt.text = "";
+        descTxt.font = GameUIFonts.Default;
+        descTxt.fontSize = 12;
+        descTxt.alignment = TextAnchor.MiddleCenter;
+        descTxt.color = new Color(0.85f, 0.88f, 0.92f);
+
+        var nameGo = new GameObject("NameText");
+        nameGo.transform.SetParent(go.transform, false);
+        var nameRt = nameGo.AddComponent<RectTransform>();
+        nameRt.anchorMin = Vector2.zero;
+        nameRt.anchorMax = new Vector2(1, 0.2f);
+        nameRt.offsetMin = new Vector2(6, 2);
+        nameRt.offsetMax = new Vector2(-6, -2);
+        var nameTxt = nameGo.AddComponent<Text>();
+        nameTxt.text = "";
+        nameTxt.font = GameUIFonts.Default;
+        nameTxt.fontSize = 16;
+        nameTxt.alignment = TextAnchor.MiddleCenter;
+        nameTxt.color = Color.white;
+
+        return (btn, iconImg, descTxt, nameTxt);
     }
 
     private static void AddButtonClickAnim(params Button[] buttons)

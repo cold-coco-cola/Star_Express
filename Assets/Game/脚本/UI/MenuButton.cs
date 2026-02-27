@@ -32,7 +32,7 @@ namespace Game.Scripts.UI
 
         private void Start()
         {
-            if (buttonText == null) buttonText = GetComponentInChildren<Text>();
+            buttonText = GetComponentInChildren<Text>();
             if (buttonText != null) _originalTextColor = buttonText.color;
             _originalScale = transform.localScale;
             _bgImage = GetComponent<Image>();

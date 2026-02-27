@@ -147,8 +147,8 @@ public class Passenger : MonoBehaviour
     /// <summary>根据排队序号设置乘客在站台的位置偏移。</summary>
     public void UpdateQueuePosition(int queueIndex)
     {
-        float offsetX = (queueIndex % 4) * 0.2f - 0.3f;
-        float offsetY = 0.5f + (queueIndex / 4) * 0.2f;
+        float offsetX = (queueIndex % 4) * 0.27f - 0.3f;
+        float offsetY = 0.5f + (queueIndex / 4) * 0.28f;
         transform.localPosition = new Vector3(offsetX, offsetY, -0.1f);
     }
 }

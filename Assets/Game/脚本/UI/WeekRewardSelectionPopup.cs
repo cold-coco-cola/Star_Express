@@ -16,8 +16,12 @@ public class WeekRewardSelectionPopup : BasePanel
     public Text hintText;
     public Button option1Button;
     public Text option1Label;
+    public Text option1Desc;
+    public Image option1Icon;
     public Button option2Button;
     public Text option2Label;
+    public Text option2Desc;
+    public Image option2Icon;
 
     private RewardOption[] _options = new RewardOption[2];
 
@@ -63,8 +67,8 @@ public class WeekRewardSelectionPopup : BasePanel
         _options = PickTwoRandomOptions();
         if (weekText != null) weekText.text = $"第 {week} 周";
         if (hintText != null) hintText.text = "选择 1 项奖励";
-        SetOptionLabel(option1Button, option1Label, 0);
-        SetOptionLabel(option2Button, option2Label, 1);
+        SetOptionLabel(0);
+        SetOptionLabel(1);
         if (transform.parent != null) transform.SetAsLastSibling();
         Show();
     }
@@ -92,15 +96,27 @@ public class WeekRewardSelectionPopup : BasePanel
         Hide();
     }
 
-    private void SetOptionLabel(Button btn, Text label, int index)
+    /// <summary>根据选项索引设置名称、描述、图标。图标通过 VisualConfig.rewardIcons[(int)RewardOption] 获取。</summary>
+    private void SetOptionLabel(int index)
     {
         if (index >= _options.Length) return;
-        string name = _options[index] == RewardOption.Carriage ? "客舱" : _options[index] == RewardOption.StarTunnel ? "星隧" : "新线路";
+        var opt = _options[index];
+        string name = opt == RewardOption.Carriage ? "客舱" : opt == RewardOption.StarTunnel ? "星隧" : "新线路";
+        string desc = opt == RewardOption.Carriage ? "飞船容量 +2" : opt == RewardOption.StarTunnel ? "快速传送通道" : "解锁新线路";
+
+        var label = index == 0 ? option1Label : option2Label;
+        var descText = index == 0 ? option1Desc : option2Desc;
+        var iconImg = index == 0 ? option1Icon : option2Icon;
+
         if (label != null) label.text = name;
-        if (btn != null)
+        if (descText != null) descText.text = desc;
+        if (iconImg != null)
         {
-            var img = btn.GetComponent<Image>();
-            if (img != null) img.color = new Color(0.25f, 0.3f, 0.38f);
+            var vc = GameManager.Instance != null ? GameManager.Instance.visualConfig : null;
+            if (vc != null && vc.rewardIcons != null && (int)opt < vc.rewardIcons.Length && vc.rewardIcons[(int)opt] != null)
+                iconImg.sprite = vc.rewardIcons[(int)opt];
+            else
+                iconImg.sprite = null;
         }
     }
 }
