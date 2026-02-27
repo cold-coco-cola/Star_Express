@@ -367,6 +367,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _pressScale: 0.88
+  _hoverScale: 1.05
   _animDuration: 0.12
   _releaseOvershoot: 1.04
 --- !u!114 &106918351
@@ -381,11 +382,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7b31590c41567f4499448f7ccb468f54, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  buttonText: {fileID: 121840183}
+  buttonText: {fileID: 2018734587}
   highlightIcon: {fileID: 0}
-  hoverBgColor: {r: 0.4, g: 0.4, b: 0.45, a: 0.35}
-  normalBgColor: {r: 1, g: 1, b: 1, a: 0}
-  highlightColor: {r: 1, g: 0.6, b: 0.2, a: 1}
+  hoverBgColor: {r: 0.8943129, g: 0.8943129, b: 0.9339623, a: 0.93333334}
+  normalBgColor: {r: 1, g: 1, b: 1, a: 1}
+  highlightColor: {r: 0.8867924, g: 0.7494347, b: 0.29699183, a: 1}
   scaleMultiplier: 1.05
   transitionDuration: 0.15
 --- !u!114 &106918352
@@ -414,7 +415,7 @@ MonoBehaviour:
     m_PressedColor: {r: 0.12, g: 0.15, b: 0.28, a: 1}
     m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
     m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
-    m_ColorMultiplier: 1
+    m_ColorMultiplier: 2.64
     m_FadeDuration: 0.1
   m_SpriteState:
     m_HighlightedSprite: {fileID: 0}
@@ -428,7 +429,7 @@ MonoBehaviour:
     m_SelectedTrigger: Selected
     m_DisabledTrigger: Disabled
   m_Interactable: 1
-  m_TargetGraphic: {fileID: 106918354}
+  m_TargetGraphic: {fileID: 1917670022}
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
@@ -460,14 +461,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.08, g: 0.1, b: 0.18, a: 0.92}
+  m_Color: {r: 1, g: 1, b: 1, a: 0.9882353}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 0}
+  m_Sprite: {fileID: 21300000, guid: efc5e50a4f78c124c91fa61be884f21c, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -680,12 +681,12 @@ MonoBehaviour:
       m_Calls: []
   m_FontData:
     m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
-    m_FontSize: 32
+    m_FontSize: 34
     m_FontStyle: 0
     m_BestFit: 0
-    m_MinSize: 10
+    m_MinSize: 0
     m_MaxSize: 40
-    m_Alignment: 3
+    m_Alignment: 4
     m_AlignByGeometry: 0
     m_RichText: 1
     m_HorizontalOverflow: 1
@@ -1164,6 +1165,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _pressScale: 0.88
+  _hoverScale: 1.05
   _animDuration: 0.12
   _releaseOvershoot: 1.04
 --- !u!114 &516003989
@@ -1178,11 +1180,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7b31590c41567f4499448f7ccb468f54, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  buttonText: {fileID: 1676493877}
+  buttonText: {fileID: 2018734587}
   highlightIcon: {fileID: 0}
-  hoverBgColor: {r: 0.4, g: 0.4, b: 0.45, a: 0.35}
-  normalBgColor: {r: 1, g: 1, b: 1, a: 0}
-  highlightColor: {r: 1, g: 0.6, b: 0.2, a: 1}
+  hoverBgColor: {r: 0.8943129, g: 0.8943129, b: 0.9339623, a: 0.93333334}
+  normalBgColor: {r: 1, g: 1, b: 1, a: 1}
+  highlightColor: {r: 0.8867924, g: 0.7494347, b: 0.29699183, a: 1}
   scaleMultiplier: 1.05
   transitionDuration: 0.15
 --- !u!114 &516003990
@@ -1211,7 +1213,7 @@ MonoBehaviour:
     m_PressedColor: {r: 0.12, g: 0.15, b: 0.28, a: 1}
     m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
     m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
-    m_ColorMultiplier: 1
+    m_ColorMultiplier: 2.64
     m_FadeDuration: 0.1
   m_SpriteState:
     m_HighlightedSprite: {fileID: 0}
@@ -1225,7 +1227,7 @@ MonoBehaviour:
     m_SelectedTrigger: Selected
     m_DisabledTrigger: Disabled
   m_Interactable: 1
-  m_TargetGraphic: {fileID: 516003992}
+  m_TargetGraphic: {fileID: 1917670022}
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
@@ -1257,14 +1259,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.12, g: 0.18, b: 0.28, a: 0.95}
+  m_Color: {r: 1, g: 1, b: 1, a: 0.9882353}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 0}
+  m_Sprite: {fileID: 21300000, guid: efc5e50a4f78c124c91fa61be884f21c, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -1712,6 +1714,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _pressScale: 0.88
+  _hoverScale: 1.05
   _animDuration: 0.12
   _releaseOvershoot: 1.04
 --- !u!114 &999554849
@@ -2059,6 +2062,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _pressScale: 0.88
+  _hoverScale: 1.05
   _animDuration: 0.12
   _releaseOvershoot: 1.04
 --- !u!114 &1349333066
@@ -2818,12 +2822,12 @@ MonoBehaviour:
       m_Calls: []
   m_FontData:
     m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
-    m_FontSize: 32
+    m_FontSize: 34
     m_FontStyle: 0
     m_BestFit: 0
-    m_MinSize: 10
+    m_MinSize: 0
     m_MaxSize: 40
-    m_Alignment: 3
+    m_Alignment: 4
     m_AlignByGeometry: 0
     m_RichText: 1
     m_HorizontalOverflow: 1
@@ -3029,6 +3033,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _pressScale: 0.88
+  _hoverScale: 1.05
   _animDuration: 0.12
   _releaseOvershoot: 1.04
 --- !u!114 &1682585477
@@ -3203,12 +3208,12 @@ MonoBehaviour:
       m_Calls: []
   m_FontData:
     m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
-    m_FontSize: 32
+    m_FontSize: 34
     m_FontStyle: 0
     m_BestFit: 0
-    m_MinSize: 10
+    m_MinSize: 0
     m_MaxSize: 40
-    m_Alignment: 3
+    m_Alignment: 4
     m_AlignByGeometry: 0
     m_RichText: 1
     m_HorizontalOverflow: 1
@@ -3503,6 +3508,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _pressScale: 0.88
+  _hoverScale: 1.05
   _animDuration: 0.12
   _releaseOvershoot: 1.04
 --- !u!114 &1917670019
@@ -3519,9 +3525,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buttonText: {fileID: 2018734587}
   highlightIcon: {fileID: 0}
-  hoverBgColor: {r: 0.4, g: 0.4, b: 0.45, a: 0.35}
-  normalBgColor: {r: 1, g: 1, b: 1, a: 0}
-  highlightColor: {r: 1, g: 0.6, b: 0.2, a: 1}
+  hoverBgColor: {r: 0.8943129, g: 0.8943129, b: 0.9339623, a: 0.93333334}
+  normalBgColor: {r: 1, g: 1, b: 1, a: 1}
+  highlightColor: {r: 0.8867924, g: 0.7494347, b: 0.29699183, a: 1}
   scaleMultiplier: 1.05
   transitionDuration: 0.15
 --- !u!114 &1917670020
@@ -3550,7 +3556,7 @@ MonoBehaviour:
     m_PressedColor: {r: 0.12, g: 0.15, b: 0.28, a: 1}
     m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
     m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
-    m_ColorMultiplier: 1
+    m_ColorMultiplier: 2.64
     m_FadeDuration: 0.1
   m_SpriteState:
     m_HighlightedSprite: {fileID: 0}
@@ -3596,14 +3602,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.08, g: 0.1, b: 0.18, a: 0.92}
+  m_Color: {r: 1, g: 1, b: 1, a: 0.9882353}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 0}
+  m_Sprite: {fileID: 21300000, guid: efc5e50a4f78c124c91fa61be884f21c, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -3971,12 +3977,12 @@ MonoBehaviour:
       m_Calls: []
   m_FontData:
     m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
-    m_FontSize: 32
+    m_FontSize: 34
     m_FontStyle: 0
     m_BestFit: 0
-    m_MinSize: 10
+    m_MinSize: 0
     m_MaxSize: 40
-    m_Alignment: 3
+    m_Alignment: 4
     m_AlignByGeometry: 0
     m_RichText: 1
     m_HorizontalOverflow: 1
@@ -4286,6 +4292,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _pressScale: 0.88
+  _hoverScale: 1.05
   _animDuration: 0.12
   _releaseOvershoot: 1.04
 --- !u!114 &2107738931
@@ -4302,9 +4309,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buttonText: {fileID: 1700797521}
   highlightIcon: {fileID: 0}
-  hoverBgColor: {r: 0.4, g: 0.4, b: 0.45, a: 0.35}
-  normalBgColor: {r: 1, g: 1, b: 1, a: 0}
-  highlightColor: {r: 1, g: 0.6, b: 0.2, a: 1}
+  hoverBgColor: {r: 0.8943129, g: 0.8943129, b: 0.9339623, a: 0.93333334}
+  normalBgColor: {r: 1, g: 1, b: 1, a: 1}
+  highlightColor: {r: 0.8867924, g: 0.7494347, b: 0.29699183, a: 1}
   scaleMultiplier: 1.05
   transitionDuration: 0.15
 --- !u!114 &2107738932
@@ -4333,7 +4340,7 @@ MonoBehaviour:
     m_PressedColor: {r: 0.12, g: 0.15, b: 0.28, a: 1}
     m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
     m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
-    m_ColorMultiplier: 1
+    m_ColorMultiplier: 2.64
     m_FadeDuration: 0.1
   m_SpriteState:
     m_HighlightedSprite: {fileID: 0}
@@ -4379,14 +4386,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.08, g: 0.1, b: 0.18, a: 0.92}
+  m_Color: {r: 1, g: 1, b: 1, a: 0.9882353}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 0}
+  m_Sprite: {fileID: 21300000, guid: efc5e50a4f78c124c91fa61be884f21c, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
