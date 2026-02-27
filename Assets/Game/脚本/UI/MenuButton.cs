@@ -29,16 +29,24 @@ namespace Game.Scripts.UI
         private Coroutine _transitionCoroutine;
         private bool _isHovered;
         private bool _isPressed;
+        private bool _hasClickAnim;
 
         private void Start()
         {
-            buttonText = GetComponentInChildren<Text>();
+            if (buttonText == null || !IsDirectChild(buttonText.transform))
+                buttonText = GetComponentInChildren<Text>();
             if (buttonText != null) _originalTextColor = buttonText.color;
             _originalScale = transform.localScale;
             _bgImage = GetComponent<Image>();
+            _hasClickAnim = GetComponent<ButtonClickAnim>() != null;
             if (_bgImage != null)
                 _bgImage.color = normalBgColor;
             if (highlightIcon != null) highlightIcon.enabled = false;
+        }
+
+        private bool IsDirectChild(Transform t)
+        {
+            return t.parent == transform;
         }
 
         public void OnPointerEnter(PointerEventData eventData)
@@ -83,8 +91,6 @@ namespace Game.Scripts.UI
         {
             Color startBg = _bgImage != null ? _bgImage.color : normalBgColor;
             Color targetBg = highlight ? hoverBgColor : normalBgColor;
-            Vector3 startScale = transform.localScale;
-            Vector3 targetScale = highlight ? _originalScale * scaleMultiplier : _originalScale;
             Color startColor = buttonText != null ? buttonText.color : _originalTextColor;
             Color targetColor = highlight ? highlightColor : _originalTextColor;
 
@@ -95,7 +101,12 @@ namespace Game.Scripts.UI
                 float ease = EaseOutCubic(t);
                 if (_bgImage != null)
                     _bgImage.color = Color.Lerp(startBg, targetBg, ease);
-                transform.localScale = Vector3.Lerp(startScale, targetScale, ease);
+                if (!_hasClickAnim)
+                {
+                    Vector3 startScale = transform.localScale;
+                    Vector3 targetScale = highlight ? _originalScale * scaleMultiplier : _originalScale;
+                    transform.localScale = Vector3.Lerp(startScale, targetScale, ease);
+                }
                 if (buttonText != null)
                     buttonText.color = Color.Lerp(startColor, targetColor, ease);
                 if (highlightIcon != null && t > 0.5f)
@@ -104,7 +115,8 @@ namespace Game.Scripts.UI
             }
             if (_bgImage != null)
                 _bgImage.color = targetBg;
-            transform.localScale = targetScale;
+            if (!_hasClickAnim)
+                transform.localScale = _originalScale * (highlight ? scaleMultiplier : 1f);
             if (buttonText != null) buttonText.color = targetColor;
             if (highlightIcon != null) highlightIcon.enabled = highlight;
             _transitionCoroutine = null;
@@ -116,7 +128,8 @@ namespace Game.Scripts.UI
         {
             if (_transitionCoroutine != null)
                 StopCoroutine(_transitionCoroutine);
-            transform.localScale = _originalScale;
+            if (!_hasClickAnim)
+                transform.localScale = _originalScale;
             if (buttonText != null) buttonText.color = _originalTextColor;
             if (_bgImage != null) _bgImage.color = normalBgColor;
         }

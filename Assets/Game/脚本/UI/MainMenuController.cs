@@ -51,9 +51,7 @@ namespace Game.Scripts.UI
             if (menuContainer == null) return;
             foreach (Transform t in menuContainer.transform)
             {
-                var img = t.GetComponent<UnityEngine.UI.Image>();
                 var outline = t.GetComponent<Outline>();
-                if (img != null) img.color = new Color(1f, 1f, 1f, 0f);
                 if (outline != null) UnityEngine.Object.Destroy(outline);
             }
         }

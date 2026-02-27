@@ -87,13 +87,29 @@ namespace Game.Scripts.UI
             if (btnGo.GetComponent<MenuButton>() == null)
             {
                 var mb = btnGo.AddComponent<MenuButton>();
-                var img = btnGo.GetComponent<Image>();
-                if (img != null) img.color = new Color(1f, 1f, 1f, 0f);
+                mb.hoverBgColor = new Color(0.8943129f, 0.8943129f, 0.9339623f, 0.93333334f);
+                mb.normalBgColor = new Color(1f, 1f, 1f, 1f);
+                mb.highlightColor = new Color(0.8867924f, 0.7494347f, 0.29699183f, 1f);
+                mb.scaleMultiplier = 1.05f;
+                mb.transitionDuration = 0.15f;
                 var t = btnGo.GetComponentInChildren<Text>();
                 if (t != null) mb.buttonText = t;
             }
             if (btnGo.GetComponent<ButtonClickAnim>() == null)
                 btnGo.AddComponent<ButtonClickAnim>();
+            if (btnGo.GetComponent<Outline>() == null)
+            {
+                var outline = btnGo.AddComponent<Outline>();
+                outline.effectColor = new Color(0.3f, 0.35f, 0.5f, 0.5f);
+                outline.effectDistance = new Vector2(0, -1);
+            }
+            var btn = btnGo.GetComponent<Button>();
+            if (btn != null && btn.transition == Selectable.Transition.ColorTint)
+            {
+                var colors = btn.colors;
+                colors.colorMultiplier = 2.64f;
+                btn.colors = colors;
+            }
         }
 
         private void EnsureCamera()
