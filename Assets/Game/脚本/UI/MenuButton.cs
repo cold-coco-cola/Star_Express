@@ -18,6 +18,10 @@ namespace Game.Scripts.UI
         public Color hoverBgColor = new Color(0.4f, 0.4f, 0.45f, 0.35f);
         public Color normalBgColor = new Color(1f, 1f, 1f, 0f);
 
+        [Header("背景图片")]
+        [Tooltip("悬停时的背景图片（优先级高于背景色）")]
+        public Sprite hoverSprite;
+
         [Header("文字")]
         public Color highlightColor = new Color(1f, 0.6f, 0.2f, 1f);
         public float scaleMultiplier = 1.05f;
@@ -26,6 +30,7 @@ namespace Game.Scripts.UI
         private Color _originalTextColor;
         private Vector3 _originalScale;
         private Image _bgImage;
+        private Sprite _originalSprite;
         private Coroutine _transitionCoroutine;
         private bool _isHovered;
         private bool _isPressed;
@@ -40,7 +45,10 @@ namespace Game.Scripts.UI
             _bgImage = GetComponent<Image>();
             _hasClickAnim = GetComponent<ButtonClickAnim>() != null;
             if (_bgImage != null)
+            {
+                _originalSprite = _bgImage.sprite;
                 _bgImage.color = normalBgColor;
+            }
             if (highlightIcon != null) highlightIcon.enabled = false;
         }
 
@@ -93,6 +101,8 @@ namespace Game.Scripts.UI
             Color targetBg = highlight ? hoverBgColor : normalBgColor;
             Color startColor = buttonText != null ? buttonText.color : _originalTextColor;
             Color targetColor = highlight ? highlightColor : _originalTextColor;
+            Sprite startSprite = _bgImage != null ? _bgImage.sprite : _originalSprite;
+            Sprite targetSprite = highlight && hoverSprite != null ? hoverSprite : _originalSprite;
 
             float t = 0f;
             while (t < 1f)
@@ -100,7 +110,11 @@ namespace Game.Scripts.UI
                 t += Time.unscaledDeltaTime / transitionDuration;
                 float ease = EaseOutCubic(t);
                 if (_bgImage != null)
+                {
                     _bgImage.color = Color.Lerp(startBg, targetBg, ease);
+                    if (hoverSprite != null)
+                        _bgImage.sprite = t > 0.5f ? targetSprite : startSprite;
+                }
                 if (!_hasClickAnim)
                 {
                     Vector3 startScale = transform.localScale;
@@ -114,7 +128,10 @@ namespace Game.Scripts.UI
                 yield return null;
             }
             if (_bgImage != null)
+            {
                 _bgImage.color = targetBg;
+                _bgImage.sprite = targetSprite;
+            }
             if (!_hasClickAnim)
                 transform.localScale = _originalScale * (highlight ? scaleMultiplier : 1f);
             if (buttonText != null) buttonText.color = targetColor;
@@ -131,7 +148,11 @@ namespace Game.Scripts.UI
             if (!_hasClickAnim)
                 transform.localScale = _originalScale;
             if (buttonText != null) buttonText.color = _originalTextColor;
-            if (_bgImage != null) _bgImage.color = normalBgColor;
+            if (_bgImage != null)
+            {
+                _bgImage.color = normalBgColor;
+                _bgImage.sprite = _originalSprite;
+            }
         }
     }
 }

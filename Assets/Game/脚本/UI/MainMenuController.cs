@@ -12,6 +12,10 @@ namespace Game.Scripts.UI
         [Header("References")]
         public GameObject menuContainer;
         public Text versionText;
+        [Tooltip("留空则自动查找")]
+        [SerializeField] private Transform _optionsPanel;
+        [SerializeField] private Transform _creditsPanel;
+        [SerializeField] private Transform _quitConfirmPanel;
 
         [Tooltip("点击 Start 后加载的场景（关卡选择）")]
         public string levelSelectSceneName = "LevelSelect";
@@ -24,36 +28,28 @@ namespace Game.Scripts.UI
         {
             Instance = this;
             _root = transform;
-            if (versionText != null)
-                versionText.text = "v" + Application.version;
+            EnsureCustomCursor();
+        }
+
+        private void EnsureCustomCursor()
+        {
+            if (GetComponent<CustomCursor>() == null)
+                gameObject.AddComponent<CustomCursor>();
         }
 
         private void Start()
         {
+            ResolvePanelRefs();
             EnsureFadeComponents();
-            NormalizeStartButton();
-            NormalizeSettingsButton();
             BindMenuButtons();
             BindPopupPanels();
         }
 
-        private void NormalizeSettingsButton()
+        private void ResolvePanelRefs()
         {
-            if (menuContainer == null) return;
-            var btn = menuContainer.transform.Find("设置Button") ?? menuContainer.transform.Find("选项Button");
-            if (btn == null) return;
-            var text = btn.Find("Text")?.GetComponent<Text>();
-            if (text != null) text.text = "设置";
-        }
-
-        private void NormalizeStartButton()
-        {
-            if (menuContainer == null) return;
-            foreach (Transform t in menuContainer.transform)
-            {
-                var outline = t.GetComponent<Outline>();
-                if (outline != null) UnityEngine.Object.Destroy(outline);
-            }
+            if (_optionsPanel == null) _optionsPanel = _root.Find("OptionsPanel");
+            if (_creditsPanel == null) _creditsPanel = _root.Find("CreditsPanel");
+            if (_quitConfirmPanel == null) _quitConfirmPanel = _root.Find("QuitConfirmPanel");
         }
 
         private void EnsureFadeComponents()
@@ -72,11 +68,12 @@ namespace Game.Scripts.UI
                 bgChild.gameObject.AddComponent<GlobalBackgroundMusic>();
             if (menuContainer != null && menuContainer.GetComponent<MenuEntryAnim>() == null)
                 menuContainer.AddComponent<MenuEntryAnim>();
-            if (GetComponent<SettingsPanelController>() == null)
-                gameObject.AddComponent<SettingsPanelController>();
-            foreach (var name in new[] { "OptionsPanel", "CreditsPanel", "QuitConfirmPanel" })
+            var spc = GetComponent<SettingsPanelController>();
+            if (spc == null) spc = gameObject.AddComponent<SettingsPanelController>();
+            if (spc != null && spc.optionsPanel == null && _optionsPanel != null)
+                spc.optionsPanel = _optionsPanel;
+            foreach (var panel in new[] { GetPanel("OptionsPanel"), GetPanel("CreditsPanel"), GetPanel("QuitConfirmPanel") })
             {
-                var panel = _root.Find(name);
                 if (panel != null && panel.GetComponent<PanelFadeAnim>() == null)
                     panel.gameObject.AddComponent<PanelFadeAnim>();
             }
@@ -109,14 +106,21 @@ namespace Game.Scripts.UI
 
         private void BindPopupPanels()
         {
-            BindPanelClose("OptionsPanel");
-            BindPanelClose("CreditsPanel");
-            BindPanelClose("QuitConfirmPanel", isQuit: true);
+            BindPanelClose(GetPanel("OptionsPanel"), isQuit: false);
+            BindPanelClose(GetPanel("CreditsPanel"), isQuit: false);
+            BindPanelClose(GetPanel("QuitConfirmPanel"), isQuit: true);
         }
 
-        private void BindPanelClose(string panelName, bool isQuit = false)
+        private Transform GetPanel(string name)
         {
-            var panel = _root.Find(panelName);
+            if (name == "OptionsPanel" && _optionsPanel != null) return _optionsPanel;
+            if (name == "CreditsPanel" && _creditsPanel != null) return _creditsPanel;
+            if (name == "QuitConfirmPanel" && _quitConfirmPanel != null) return _quitConfirmPanel;
+            return _root.Find(name);
+        }
+
+        private void BindPanelClose(Transform panel, bool isQuit = false)
+        {
             if (panel == null) return;
             var audio = GetComponent<MenuAudio>();
             var overlay = panel.Find("Overlay");
@@ -126,18 +130,21 @@ namespace Game.Scripts.UI
                 if (overlayBtn != null)
                 {
                     EnsureMenuButtonStyle(overlay.gameObject, isOverlay: true);
-                    overlayBtn.onClick.AddListener(() => HidePanel(panelName));
+                    overlayBtn.onClick.RemoveAllListeners();
+                    overlayBtn.onClick.AddListener(() => HidePanelInternal(panel));
                     if (audio != null) overlayBtn.onClick.AddListener(audio.PlayClick);
                 }
             }
-            var closeBtn = panel.Find("Box/CloseButton")?.GetComponent<Button>();
+            var box = panel.Find("Box") ?? panel.Find("Box ");
+            var closeBtn = box?.Find("CloseButton")?.GetComponent<Button>();
             if (closeBtn != null)
             {
                 EnsureMenuButtonStyle(closeBtn.gameObject, isOverlay: false);
+                closeBtn.onClick.RemoveAllListeners();
                 if (isQuit)
                     closeBtn.onClick.AddListener(OnQuitConfirmed);
                 else
-                    closeBtn.onClick.AddListener(() => HidePanel(panelName));
+                    closeBtn.onClick.AddListener(() => HidePanelInternal(panel));
                 if (audio != null) closeBtn.onClick.AddListener(audio.PlayClick);
             }
         }
@@ -154,17 +161,17 @@ namespace Game.Scripts.UI
 
         public void OnOptionsClicked()
         {
-            ShowPanel("OptionsPanel");
+            ShowPanel(GetPanel("OptionsPanel"));
         }
 
         public void OnCreditsClicked()
         {
-            ShowPanel("CreditsPanel");
+            ShowPanel(GetPanel("CreditsPanel"));
         }
 
         public void OnQuitClicked()
         {
-            ShowPanel("QuitConfirmPanel");
+            ShowPanel(GetPanel("QuitConfirmPanel"));
         }
 
         public void OnQuitConfirmed()
@@ -175,23 +182,23 @@ namespace Game.Scripts.UI
 #endif
         }
 
-        public void ShowPanel(string panelName)
+        public void ShowPanel(Transform panel)
         {
-            var panel = _root.Find(panelName);
             if (panel != null)
                 panel.gameObject.SetActive(true);
         }
 
-        /// <summary>确保按钮具有与 StartMenu 一致的 MenuButton 交互（音效+视效）。</summary>
+        /// <summary>确保按钮具有 MenuButton 交互（音效+视效）。仅补充缺失组件，不覆盖场景中的值。</summary>
         private void EnsureMenuButtonStyle(GameObject buttonGo, bool isOverlay)
         {
-            if (buttonGo.GetComponent<MenuButton>() == null)
+            var mb = buttonGo.GetComponent<MenuButton>();
+            if (mb == null)
             {
-                var mb = buttonGo.AddComponent<MenuButton>();
+                var img = buttonGo.GetComponent<UnityEngine.UI.Image>();
+                mb = buttonGo.AddComponent<MenuButton>();
+                if (img != null) mb.normalBgColor = img.color;
                 if (isOverlay)
                 {
-                    var img = buttonGo.GetComponent<UnityEngine.UI.Image>();
-                    if (img != null) mb.normalBgColor = img.color;
                     mb.hoverBgColor = new Color(0.15f, 0.15f, 0.18f, 0.4f);
                     mb.scaleMultiplier = 1f;
                 }
@@ -202,9 +209,21 @@ namespace Game.Scripts.UI
             }
         }
 
-        public void HidePanel(string panelName)
+        public void HidePanel(Transform panel)
         {
-            var panel = _root.Find(panelName);
+            if (panel != null) HidePanelInternal(panel);
+        }
+
+        /// <summary>供 MainMenuBuilder 在创建 UI 时写入引用，便于持久化到场景。</summary>
+        public void SetPanelRefs(Transform options, Transform credits, Transform quit)
+        {
+            _optionsPanel = options;
+            _creditsPanel = credits;
+            _quitConfirmPanel = quit;
+        }
+
+        private void HidePanelInternal(Transform panel)
+        {
             if (panel == null) return;
             var fade = panel.GetComponent<PanelFadeAnim>();
             if (fade != null)

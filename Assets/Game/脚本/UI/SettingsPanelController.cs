@@ -21,20 +21,15 @@ namespace Game.Scripts.UI
             var panel = optionsPanel != null ? optionsPanel : transform.Find("OptionsPanel");
             if (panel == null) return;
 
-            // 确保标题为「设置」
-            var title = panel.Find("Box/Title");
-            if (title != null)
-            {
-                var t = title.GetComponent<Text>();
-                if (t != null) t.text = "设置";
-            }
-
             var content = panel.Find("Box/Content");
             if (content == null) return;
 
-            // 若已有声音板块则跳过
-            if (content.Find("SoundSection") != null) return;
-
+            var soundSection = content.Find("SoundSection");
+            if (soundSection != null)
+            {
+                BindSoundSection(content);
+                return;
+            }
             BuildSoundSection(content);
         }
 
@@ -176,6 +171,33 @@ namespace Game.Scripts.UI
             handleRt.sizeDelta = new Vector2(20, 0);
             slider.handleRect = handleRt;
             slider.targetGraphic = handleImg;
+        }
+
+        private void BindSoundSection(Transform content)
+        {
+            var section = content.Find("SoundSection");
+            if (section == null) return;
+
+            var musicRow = section.Find("背景音乐Row");
+            var sfxRow = section.Find("音效Row");
+            if (musicRow != null)
+            {
+                var slider = musicRow.Find("Slider")?.GetComponent<Slider>();
+                if (slider != null)
+                {
+                    slider.value = PlayerPrefs.GetFloat(MusicVolumeKey, 0.6f);
+                    slider.onValueChanged.AddListener(OnMusicVolumeChanged);
+                }
+            }
+            if (sfxRow != null)
+            {
+                var slider = sfxRow.Find("Slider")?.GetComponent<Slider>();
+                if (slider != null)
+                {
+                    slider.value = PlayerPrefs.GetFloat(SFXVolumeKey, 0.7f);
+                    slider.onValueChanged.AddListener(OnSFXVolumeChanged);
+                }
+            }
         }
 
         private void OnMusicVolumeChanged(float v)

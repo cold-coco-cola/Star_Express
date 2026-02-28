@@ -85,8 +85,62 @@ namespace Game.Scripts.UI
             // 9. 创建弹窗占位（选项、制作人员、退出确认）
             CreatePopupPanels();
 
-            // 10. 添加控制器
+            // 10. 添加控制器并写入面板引用（符合 rules：使用 SerializeField 而非 Find）
             EnsureController();
+            var ctrl = GetComponent<MainMenuController>();
+            if (ctrl != null)
+            {
+                ctrl.SetPanelRefs(transform.Find("OptionsPanel"), transform.Find("CreditsPanel"), transform.Find("QuitConfirmPanel"));
+#if UNITY_EDITOR
+                UnityEditor.EditorUtility.SetDirty(ctrl);
+#endif
+            }
+        }
+
+        [ContextMenu("补全/修复 StartMenu UI（SoundSection、按钮文字、面板引用）")]
+        public void EnsureOptionsSoundSection()
+        {
+            var font = GetDefaultFont();
+            var options = transform.Find("OptionsPanel");
+            if (options != null)
+            {
+                var content = options.Find("Box/Content");
+                if (content != null && content.Find("SoundSection") == null)
+                {
+                    var ph = content.Find("Placeholder");
+                    if (ph != null) DestroyImmediate(ph.gameObject);
+                    BuildSoundSectionInBuilder(content, font);
+                }
+                var panelCg = options.GetComponent<CanvasGroup>();
+                if (panelCg == null) options.gameObject.AddComponent<CanvasGroup>();
+            }
+            foreach (var name in new[] { "CreditsPanel", "QuitConfirmPanel" })
+            {
+                var p = transform.Find(name);
+                if (p != null && p.GetComponent<CanvasGroup>() == null) p.gameObject.AddComponent<CanvasGroup>();
+            }
+            NormalizeSettingsButtonInEditor();
+            var ctrl = GetComponent<MainMenuController>();
+            if (ctrl != null)
+            {
+                ctrl.SetPanelRefs(transform.Find("OptionsPanel"), transform.Find("CreditsPanel"), transform.Find("QuitConfirmPanel"));
+#if UNITY_EDITOR
+                UnityEditor.EditorUtility.SetDirty(ctrl);
+#endif
+            }
+#if UNITY_EDITOR
+            UnityEditor.EditorUtility.SetDirty(gameObject);
+#endif
+        }
+
+        private void NormalizeSettingsButtonInEditor()
+        {
+            var menu = transform.Find("MenuContainer");
+            if (menu == null) return;
+            var btn = menu.Find("设置Button") ?? menu.Find("选项Button");
+            if (btn == null) return;
+            var t = btn.Find("Text")?.GetComponent<Text>();
+            if (t != null) t.text = "设置";
         }
 
         private void CreateBackground()
@@ -289,16 +343,17 @@ namespace Game.Scripts.UI
         private void CreatePopupPanels()
         {
             var font = GetDefaultFont();
-            CreatePopup("OptionsPanel", "设置", font, false, ""); // 内容由 SettingsPanelController 填充
+            CreatePopup("OptionsPanel", "设置", font, false, "", buildSoundSection: true);
             CreatePopup("CreditsPanel", "制作人员", font, false, "（内容待添加）");
             CreatePopup("QuitConfirmPanel", "确认退出？", font, true, "确定要退出游戏吗？");
         }
 
-        private void CreatePopup(string panelName, string title, Font font, bool isQuit = false, string placeholderText = "（内容待添加）")
+        private void CreatePopup(string panelName, string title, Font font, bool isQuit = false, string placeholderText = "（内容待添加）", bool buildSoundSection = false)
         {
             var panel = new GameObject(panelName);
             panel.transform.SetParent(transform, false);
             panel.SetActive(false);
+            panel.AddComponent<CanvasGroup>(); // 场景中持久化，便于编辑器中可见
             panel.AddComponent<PanelFadeAnim>();
 
             var panelRt = panel.AddComponent<RectTransform>();
@@ -353,27 +408,35 @@ namespace Game.Scripts.UI
             contentRt.anchorMax = new Vector2(1, 1);
             contentRt.offsetMin = new Vector2(24, 80);
             contentRt.offsetMax = new Vector2(-24, -24);
-            var placeholder = new GameObject("Placeholder");
-            placeholder.transform.SetParent(content.transform, false);
-            var phText = placeholder.AddComponent<Text>();
-            phText.text = placeholderText;
-            phText.font = font;
-            phText.fontSize = 18;
-            phText.color = new Color(1, 1, 1, 0.4f);
-            phText.alignment = TextAnchor.MiddleCenter;
-            var phRt = placeholder.GetComponent<RectTransform>();
-            phRt.anchorMin = Vector2.zero;
-            phRt.anchorMax = Vector2.one;
-            phRt.offsetMin = phRt.offsetMax = Vector2.zero;
+            if (!buildSoundSection)
+            {
+                var placeholder = new GameObject("Placeholder");
+                placeholder.transform.SetParent(content.transform, false);
+                var phText = placeholder.AddComponent<Text>();
+                phText.text = placeholderText;
+                phText.font = font;
+                phText.fontSize = 18;
+                phText.color = new Color(1, 1, 1, 0.4f);
+                phText.alignment = TextAnchor.MiddleCenter;
+                var phRt = placeholder.GetComponent<RectTransform>();
+                phRt.anchorMin = Vector2.zero;
+                phRt.anchorMax = Vector2.one;
+                phRt.offsetMin = phRt.offsetMax = Vector2.zero;
+            }
+            else
+            {
+                BuildSoundSectionInBuilder(content.transform, font);
+            }
 
             var closeBtn = new GameObject("CloseButton");
             closeBtn.transform.SetParent(box.transform, false);
             var closeImg = closeBtn.AddComponent<Image>();
-            closeImg.color = new Color(0.18f, 0.25f, 0.38f, 0.95f);
+            var closeBtnColor = new Color(0.18f, 0.25f, 0.38f, 0.95f);
+            closeImg.color = closeBtnColor;
             var closeOutline = closeBtn.AddComponent<Outline>();
             closeOutline.effectColor = new Color(0.5f, 0.6f, 0.8f, 0.3f);
             closeOutline.effectDistance = new Vector2(0, -1);
-            var closeBtnComp = closeBtn.AddComponent<Button>();
+            closeBtn.AddComponent<Button>();
             var closeRt = closeBtn.GetComponent<RectTransform>();
             closeRt.anchorMin = new Vector2(0.5f, 0);
             closeRt.anchorMax = new Vector2(0.5f, 0);
@@ -381,6 +444,8 @@ namespace Game.Scripts.UI
             closeRt.anchoredPosition = new Vector2(0, 24);
             closeRt.sizeDelta = new Vector2(160, 48);
             closeBtn.AddComponent<ButtonClickAnim>();
+            var closeMb = closeBtn.AddComponent<MenuButton>();
+            closeMb.normalBgColor = closeBtnColor;
 
             var closeText = new GameObject("Text");
             closeText.transform.SetParent(closeBtn.transform, false);
@@ -395,7 +460,13 @@ namespace Game.Scripts.UI
             closeTextRt.anchorMax = Vector2.one;
             closeTextRt.offsetMin = closeTextRt.offsetMax = Vector2.zero;
 
-            overlay.AddComponent<Button>().targetGraphic = overlayImg;
+            var overlayBtn = overlay.AddComponent<Button>();
+            overlayBtn.targetGraphic = overlayImg;
+            overlayBtn.transition = Selectable.Transition.None;
+            var overlayMb = overlay.AddComponent<MenuButton>();
+            overlayMb.normalBgColor = overlayImg.color;
+            overlayMb.hoverBgColor = new Color(0.15f, 0.15f, 0.18f, 0.4f);
+            overlayMb.scaleMultiplier = 1f;
         }
 
         private void CreateFooter()
@@ -458,6 +529,133 @@ namespace Game.Scripts.UI
             cam.orthographic = true;
             cam.orthographicSize = 5f;
             camObj.AddComponent<AudioListener>();
+        }
+
+        private void BuildSoundSectionInBuilder(Transform content, Font font)
+        {
+            var section = new GameObject("SoundSection");
+            section.AddComponent<Image>().color = new Color(0, 0, 0, 0);
+            section.transform.SetParent(content, false);
+
+            var vlg = section.AddComponent<VerticalLayoutGroup>();
+            vlg.spacing = 16;
+            vlg.childAlignment = TextAnchor.UpperCenter;
+            vlg.childControlHeight = false;
+            vlg.childControlWidth = true;
+            vlg.childForceExpandWidth = true;
+
+            var sectionRt = section.GetComponent<RectTransform>();
+            if (sectionRt != null)
+            {
+                sectionRt.anchorMin = Vector2.zero;
+                sectionRt.anchorMax = Vector2.one;
+                sectionRt.offsetMin = sectionRt.offsetMax = Vector2.zero;
+            }
+
+            var title = CreateSoundLabel(section.transform, "声音", font, 22);
+            if (title != null)
+            {
+                var titleRt = title.GetComponent<RectTransform>();
+                if (titleRt != null) titleRt.sizeDelta = new Vector2(-1, 32);
+            }
+
+            CreateSoundSliderRow(section.transform, "背景音乐", 0.6f, font);
+            CreateSoundSliderRow(section.transform, "音效", 0.7f, font);
+        }
+
+        private GameObject CreateSoundLabel(Transform parent, string text, Font font, int fontSize)
+        {
+            var go = new GameObject("Label");
+            var t = go.AddComponent<Text>();
+            t.text = text;
+            t.font = font;
+            t.fontSize = fontSize;
+            t.color = Color.white;
+            go.transform.SetParent(parent, false);
+            var rt = go.GetComponent<RectTransform>();
+            rt.sizeDelta = new Vector2(-1, 24);
+            return go;
+        }
+
+        private void CreateSoundSliderRow(Transform parent, string label, float defaultValue, Font font)
+        {
+            var row = new GameObject(label + "Row");
+            row.AddComponent<Image>().color = new Color(0, 0, 0, 0);
+            row.transform.SetParent(parent, false);
+
+            var hlg = row.AddComponent<HorizontalLayoutGroup>();
+            hlg.spacing = 12;
+            hlg.childAlignment = TextAnchor.MiddleLeft;
+            hlg.childControlHeight = true;
+            hlg.childControlWidth = false;
+            hlg.childForceExpandWidth = false;
+
+            var rowRt = row.GetComponent<RectTransform>();
+            rowRt.sizeDelta = new Vector2(-1, 36);
+
+            var lbl = CreateSoundLabel(row.transform, label, font, 18);
+            var lblLayout = lbl.AddComponent<LayoutElement>();
+            lblLayout.preferredWidth = 80;
+            lblLayout.preferredHeight = 28;
+
+            var sliderObj = new GameObject("Slider");
+            sliderObj.AddComponent<Image>().color = new Color(0, 0, 0, 0);
+            sliderObj.transform.SetParent(row.transform, false);
+            var slider = sliderObj.AddComponent<Slider>();
+            slider.minValue = 0f;
+            slider.maxValue = 1f;
+            slider.value = defaultValue;
+
+            var sliderLayout = sliderObj.AddComponent<LayoutElement>();
+            sliderLayout.flexibleWidth = 1;
+            sliderLayout.preferredWidth = 200;
+            sliderLayout.preferredHeight = 24;
+
+            var bg = new GameObject("Background");
+            bg.transform.SetParent(sliderObj.transform, false);
+            var bgImg = bg.AddComponent<Image>();
+            bgImg.color = new Color(0.2f, 0.25f, 0.35f, 0.9f);
+            var bgRt = bg.GetComponent<RectTransform>();
+            bgRt.anchorMin = new Vector2(0, 0.25f);
+            bgRt.anchorMax = new Vector2(1, 0.75f);
+            bgRt.offsetMin = bgRt.offsetMax = Vector2.zero;
+
+            var fillArea = new GameObject("Fill Area");
+            fillArea.AddComponent<Image>().color = new Color(0, 0, 0, 0);
+            fillArea.transform.SetParent(sliderObj.transform, false);
+            var fillAreaRt = fillArea.GetComponent<RectTransform>();
+            fillAreaRt.anchorMin = new Vector2(0, 0.25f);
+            fillAreaRt.anchorMax = new Vector2(1, 0.75f);
+            fillAreaRt.offsetMin = new Vector2(5, 0);
+            fillAreaRt.offsetMax = new Vector2(-5, 0);
+
+            var fill = new GameObject("Fill");
+            fill.transform.SetParent(fillArea.transform, false);
+            var fillImg = fill.AddComponent<Image>();
+            fillImg.color = new Color(0.4f, 0.55f, 0.8f, 0.95f);
+            slider.fillRect = fill.GetComponent<RectTransform>();
+            var fillRt = fill.GetComponent<RectTransform>();
+            fillRt.anchorMin = Vector2.zero;
+            fillRt.anchorMax = Vector2.one;
+            fillRt.offsetMin = fillRt.offsetMax = Vector2.zero;
+
+            var handleArea = new GameObject("Handle Slide Area");
+            handleArea.AddComponent<Image>().color = new Color(0, 0, 0, 0);
+            handleArea.transform.SetParent(sliderObj.transform, false);
+            var handleAreaRt = handleArea.GetComponent<RectTransform>();
+            handleAreaRt.anchorMin = Vector2.zero;
+            handleAreaRt.anchorMax = Vector2.one;
+            handleAreaRt.offsetMin = new Vector2(10, 0);
+            handleAreaRt.offsetMax = new Vector2(-10, 0);
+
+            var handle = new GameObject("Handle");
+            handle.transform.SetParent(handleArea.transform, false);
+            var handleImg = handle.AddComponent<Image>();
+            handleImg.color = Color.white;
+            var handleRt = handle.GetComponent<RectTransform>();
+            handleRt.sizeDelta = new Vector2(20, 0);
+            slider.handleRect = handleRt;
+            slider.targetGraphic = handleImg;
         }
 
         private Font GetDefaultFont()

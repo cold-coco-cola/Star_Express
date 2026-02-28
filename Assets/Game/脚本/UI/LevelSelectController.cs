@@ -46,6 +46,8 @@ namespace Game.Scripts.UI
                     root.AddComponent<AudioSource>();
                 root.AddComponent<MenuAudio>();
             }
+            if (root.GetComponent<CustomCursor>() == null)
+                root.AddComponent<CustomCursor>();
         }
 
         private void Start()
@@ -65,7 +67,7 @@ namespace Game.Scripts.UI
                 var btn = btnGo.GetComponent<Button>();
                 if (btn != null)
                 {
-                    EnsureMenuButtonStyle(btnGo);
+                    EnsureMenuButtonStyle(btnGo, true);
                     var sceneName = levels[i].sceneName;
                     btn.onClick.RemoveAllListeners();
                     if (audio != null) btn.onClick.AddListener(audio.PlayClick);
@@ -75,14 +77,14 @@ namespace Game.Scripts.UI
             var backBtn = transform.Find("BackButton")?.GetComponent<Button>();
             if (backBtn != null)
             {
-                EnsureMenuButtonStyle(backBtn.gameObject);
+                EnsureMenuButtonStyle(backBtn.gameObject, false);
                 backBtn.onClick.RemoveAllListeners();
                 if (audio != null) backBtn.onClick.AddListener(audio.PlayClick);
                 backBtn.onClick.AddListener(() => SceneManager.LoadScene(backSceneName));
             }
         }
 
-        private void EnsureMenuButtonStyle(GameObject btnGo)
+        private void EnsureMenuButtonStyle(GameObject btnGo, bool useHoverSprite = true)
         {
             if (btnGo.GetComponent<MenuButton>() == null)
             {
@@ -92,6 +94,11 @@ namespace Game.Scripts.UI
                 mb.highlightColor = new Color(0.8867924f, 0.7494347f, 0.29699183f, 1f);
                 mb.scaleMultiplier = 1.05f;
                 mb.transitionDuration = 0.15f;
+                if (useHoverSprite)
+                {
+                    var hoverSprite = Resources.Load<Sprite>("UI/Button/choice_hover_background");
+                    if (hoverSprite != null) mb.hoverSprite = hoverSprite;
+                }
                 var t = btnGo.GetComponentInChildren<Text>();
                 if (t != null) mb.buttonText = t;
             }
