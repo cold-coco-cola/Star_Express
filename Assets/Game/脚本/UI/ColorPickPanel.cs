@@ -45,7 +45,7 @@ public class ColorPickPanel : BasePanel
             panelRoot.transform.SetAsLastSibling();
     }
 
-    /// <summary>根据 MaxLineCount 仅显示已解锁的颜色按钮，并调整面板尺寸。</summary>
+    /// <summary>根据 MaxLineCount 仅显示已解锁的颜色按钮。不修改面板尺寸与按钮位置，保持与 Scene 中一致。</summary>
     private void RefreshUnlockedVisibility()
     {
         int maxCount = 3;
@@ -57,19 +57,6 @@ public class ColorPickPanel : BasePanel
         {
             if (buttons[i] != null)
                 buttons[i].gameObject.SetActive(i < maxCount);
-        }
-
-        var rect = panelRoot != null ? panelRoot.GetComponent<RectTransform>() : null;
-        if (rect != null)
-        {
-            rect.sizeDelta = maxCount <= 3 ? new Vector2(360, 160) : new Vector2(420, 220);
-        }
-
-        if (buttonCancel != null)
-        {
-            var cr = buttonCancel.GetComponent<RectTransform>();
-            if (cr != null)
-                cr.anchoredPosition = new Vector2(0, maxCount <= 3 ? -55 : -90);
         }
     }
 

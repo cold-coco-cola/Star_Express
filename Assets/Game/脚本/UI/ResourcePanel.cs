@@ -29,6 +29,8 @@ public class ResourcePanel : BasePanel
             return true;
         if (UIManager.IsShowing<CarriagePlacementPanel>())
             return true;
+        if (UIManager.IsShowing<StarTunnelHintPopup>())
+            return true;
         return false;
     }
 

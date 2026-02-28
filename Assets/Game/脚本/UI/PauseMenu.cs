@@ -2,6 +2,7 @@ using System.IO;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
+using Game.Scripts.UI;
 
 /// <summary>
 /// 暂停菜单：上部分音量控制（背景音乐、音效），底部返回主菜单。与 StartMenu 按钮同风格。
@@ -20,6 +21,7 @@ public class PauseMenu : BasePanel
 
     private void Start()
     {
+        EnsurePauseMenuButtonTextRefs();
         if (musicSlider != null)
         {
             musicSlider.minValue = 0f;
@@ -91,6 +93,21 @@ public class PauseMenu : BasePanel
             SceneManager.LoadScene(StartMenuScene);
         else
             SceneManager.LoadScene(0);
+    }
+
+    /// <summary>确保每个按钮的 MenuButton 指向自身的 Text，避免 Scene 中错误引用导致文字不可见。</summary>
+    private void EnsurePauseMenuButtonTextRefs()
+    {
+        foreach (var btn in new[] { continueButton, backToMenuButton })
+        {
+            if (btn == null) continue;
+            var mb = btn.GetComponent<MenuButton>();
+            if (mb == null) continue;
+            var ownText = btn.GetComponentInChildren<Text>();
+            if (ownText == null) continue;
+            if (mb.buttonText != ownText)
+                mb.buttonText = ownText;
+        }
     }
 
     private static bool SceneExists(string name)

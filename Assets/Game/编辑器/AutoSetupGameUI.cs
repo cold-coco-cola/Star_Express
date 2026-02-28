@@ -55,6 +55,7 @@ public static class AutoSetupGameUI
         changed |= EnsureColorPickPanel(canvas.transform);
         changed |= EnsureShipPlacementFanPanelHeight(canvas.transform);
         changed |= EnsureCarriagePlacementPanel(canvas.transform);
+        changed |= EnsureStarTunnelHintPopup(canvas.transform);
         changed |= EnsureLineStatusPanel(canvas.transform);
         changed |= EnsureWeekRewardSelectionPopup(canvas.transform);
         changed |= EnsureGameOverPopup(canvas.transform);
@@ -80,6 +81,7 @@ public static class AutoSetupGameUI
         cleaned |= RemoveDuplicateChildren(canvasGo.transform, "ResourcePanel");
         cleaned |= RemoveDuplicateChildren(canvasGo.transform, "ColorPickPanel");
         cleaned |= RemoveDuplicateChildren(canvasGo.transform, "CarriagePlacementPanel");
+        cleaned |= RemoveDuplicateChildren(canvasGo.transform, "StarTunnelHintPopup");
         cleaned |= RemoveDuplicateChildren(canvasGo.transform, "LineStatusPanel");
         cleaned |= RemoveDuplicateChildren(canvasGo.transform, "LineStatusCancelOverlay");
         cleaned |= RemoveDuplicateChildren(canvasGo.transform, "WeekRewardPopup");
@@ -466,17 +468,18 @@ public static class AutoSetupGameUI
         le.preferredWidth = circleSize + spacing + countWidth;
         le.preferredHeight = 64;
 
-        var area = MakeRect(panel.transform, "Area");
-        var ar = area.GetComponent<RectTransform>();
-        ar.anchorMin = ar.anchorMax = new Vector2(0, 0.5f);
-        ar.pivot = new Vector2(0.5f, 0.5f);
-        ar.anchoredPosition = new Vector2(circleSize * 0.5f, 0);
-        ar.sizeDelta = new Vector2(circleSize, circleSize);
-        var aImg = area.AddComponent<Image>();
-        aImg.color = new Color(0.55f, 0.45f, 0.72f);
-        var aOutline = area.AddComponent<Outline>();
-        aOutline.effectColor = new Color(0.7f, 0.6f, 0.85f, 0.3f);
-        aOutline.effectDistance = new Vector2(0, -1);
+        var circle = MakeRect(panel.transform, "CircleButton");
+        var cr = circle.GetComponent<RectTransform>();
+        cr.anchorMin = cr.anchorMax = new Vector2(0, 0.5f);
+        cr.pivot = new Vector2(0.5f, 0.5f);
+        cr.anchoredPosition = new Vector2(circleSize * 0.5f, 0);
+        cr.sizeDelta = new Vector2(circleSize, circleSize);
+        var cImg = circle.AddComponent<Image>();
+        cImg.color = new Color(0.55f, 0.45f, 0.72f);
+        var cOutline = circle.AddComponent<Outline>();
+        cOutline.effectColor = new Color(0.7f, 0.6f, 0.85f, 0.3f);
+        cOutline.effectDistance = new Vector2(0, -1);
+        AddButtonClickAnim(circle.AddComponent<Button>());
 
         var count = MakeRect(panel.transform, "CountText");
         var nr = count.GetComponent<RectTransform>();
@@ -494,7 +497,7 @@ public static class AutoSetupGameUI
         var comp = panel.AddComponent<StarTunnelPanel>();
         var so = new SerializedObject(comp);
         so.FindProperty("panelRoot").objectReferenceValue = panel;
-        so.FindProperty("areaRect").objectReferenceValue = ar;
+        so.FindProperty("circleButton").objectReferenceValue = circle.GetComponent<Button>();
         so.FindProperty("countText").objectReferenceValue = txt;
         so.ApplyModifiedProperties();
         var lbl = MakeText(panel.transform, "Label", label, new Vector2(0, -circleSize * 0.4f), new Vector2(90, 14));
@@ -790,6 +793,42 @@ public static class AutoSetupGameUI
         var comp = panel.AddComponent<CarriagePlacementPanel>();
         var so = new SerializedObject(comp);
         so.FindProperty("cancelButton").objectReferenceValue = b;
+        so.ApplyModifiedProperties();
+        AddButtonClickAnim(b);
+        panel.AddComponent<PopupShowAnim>();
+        panel.SetActive(false);
+        return true;
+    }
+
+    private static bool EnsureStarTunnelHintPopup(Transform parent)
+    {
+        if (parent.Find("StarTunnelHintPopup") != null) return false;
+        if (Object.FindObjectOfType<StarTunnelHintPopup>() != null) return false;
+
+        var panel = MakeRect(parent, "StarTunnelHintPopup");
+        var pr = panel.GetComponent<RectTransform>();
+        pr.anchorMin = new Vector2(0.5f, 0);
+        pr.anchorMax = new Vector2(0.5f, 0);
+        pr.pivot = new Vector2(0.5f, 0);
+        pr.anchoredPosition = new Vector2(0, 80);
+        pr.sizeDelta = new Vector2(280, 80);
+        var bg = panel.AddComponent<Image>();
+        bg.color = new Color(0.08f, 0.11f, 0.15f, 0.95f);
+
+        var hint = MakeText(panel.transform, "HintText", "建设线路穿过陨石带时，会自动直接消耗星燧资源哦~", new Vector2(0, 20), new Vector2(260, 44));
+        hint.alignment = TextAnchor.MiddleCenter;
+        hint.fontSize = 16;
+        var btn = MakeRect(panel.transform, "CloseButton");
+        btn.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -15);
+        btn.GetComponent<RectTransform>().sizeDelta = new Vector2(80, 28);
+        btn.AddComponent<Image>().color = new Color(0.5f, 0.3f, 0.3f);
+        var b = btn.AddComponent<Button>();
+        MakeText(btn.transform, "Text", "知道了", Vector2.zero, new Vector2(60, 22)).alignment = TextAnchor.MiddleCenter;
+
+        var comp = panel.AddComponent<StarTunnelHintPopup>();
+        var so = new SerializedObject(comp);
+        so.FindProperty("closeButton").objectReferenceValue = b;
+        so.FindProperty("hintText").objectReferenceValue = hint;
         so.ApplyModifiedProperties();
         AddButtonClickAnim(b);
         panel.AddComponent<PopupShowAnim>();

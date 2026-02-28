@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
@@ -43,6 +44,14 @@ public class ShipUpgradePanel : BasePanel
         }
         _nextRefresh = 0f;
         RefreshCount();
+        RefreshInteractable();
+        StartCoroutine(RefreshInteractableAfterFrame());
+    }
+
+    private IEnumerator RefreshInteractableAfterFrame()
+    {
+        yield return null;
+        RefreshInteractable();
     }
 
     private static Transform FindInChildren(Transform root, string name)

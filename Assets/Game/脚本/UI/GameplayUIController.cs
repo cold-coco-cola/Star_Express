@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using UnityEngine;
+using Game.Scripts.UI;
 
 /// <summary>
 /// 全局 UI 状态枚举，与设计文档 §4.1 完全一致。
@@ -41,6 +42,8 @@ public class GameplayUIController : MonoBehaviour
             return;
         }
         Instance = this;
+        if (GetComponent<CustomCursor>() == null)
+            gameObject.AddComponent<CustomCursor>();
     }
 
     private void Start()

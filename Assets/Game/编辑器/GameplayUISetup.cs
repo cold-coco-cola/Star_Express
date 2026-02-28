@@ -233,7 +233,7 @@ public static class GameplayUISetup
         Undo.RegisterCreatedObjectUndo(continueBtn.gameObject, "Add Continue Button");
         var menuBtn = continueBtn.GetComponent<MenuButton>();
         if (menuBtn == null) menuBtn = continueBtn.gameObject.AddComponent<MenuButton>();
-        var textComp = continueBtn.GetComponentInChildren<Text>();
+        var textComp = continueBtn.transform.Find("Text")?.GetComponent<Text>();
         if (textComp != null) menuBtn.buttonText = textComp;
         if (continueBtn.GetComponent<GameplayButtonHoverSound>() == null)
             continueBtn.gameObject.AddComponent<GameplayButtonHoverSound>();
