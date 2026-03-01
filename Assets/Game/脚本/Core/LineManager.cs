@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 #if UNITY_EDITOR
 using UnityEditor;
@@ -29,7 +30,7 @@ public class LineManager : MonoBehaviour, ILineManager
     [Tooltip("客舱：可升级飞船容量 +2")]
     [SerializeField] private int _carriageStock = 0;
     [Tooltip("星隧：首关不使用")]
-    [SerializeField] private int _starTunnelStock = 0;
+    [SerializeField] private int _starTunnelStock = 2;
 
     /// <summary>当前所有航线，供放置飞船 UI 使用。</summary>
     public IReadOnlyList<Line> Lines => _lines;
@@ -60,6 +61,25 @@ public class LineManager : MonoBehaviour, ILineManager
 #endif
     }
 
+    /// <summary>获取线段AB穿越所有陨石带的总次数。</summary>
+    public int GetTotalCrossCount(Vector2 a, Vector2 b)
+    {
+        var belts = FindObjectsOfType<AsteroidBeltBehaviour>();
+        if (belts == null || belts.Length == 0) return 0;
+        int total = 0;
+        foreach (var belt in belts)
+        {
+            if (belt != null)
+                total += belt.GetCrossCount(a, b);
+        }
+        return total;
+    }
+
+    private static void NotifyStarTunnelInsufficient()
+    {
+        Debug.LogWarning("星燧不足，无法穿越陨石带");
+    }
+
     /// <summary>
     /// 尝试在 A、B 间建线或延伸已有线（颜色 color）。同色仅一条线；延伸仅限该线首/末站。返回是否成功。
     /// </summary>
@@ -83,9 +103,19 @@ public class LineManager : MonoBehaviour, ILineManager
         {
             if (_lines.Count >= _maxLineCount) return false;
             if (_shipStock <= 0) return false;
+
+            int crossCount = GetTotalCrossCount(stationA.transform.position, stationB.transform.position);
+            if (_starTunnelStock < crossCount)
+            {
+                NotifyStarTunnelInsufficient();
+                return false;
+            }
+            _starTunnelStock -= crossCount;
+
             var line = new Line("Line_" + (_nextLineId++), color);
             line.stationSequence.Add(stationA);
             line.stationSequence.Add(stationB);
+            line.segmentStarTunnelCosts.Add(crossCount);
             _lines.Add(line);
             RefreshAllLinesSharingSegmentsWith(line);
             SpawnShip(line, true);
@@ -122,18 +152,65 @@ public class LineManager : MonoBehaviour, ILineManager
 
         if (wouldFormLoop)
         {
+            StationBehaviour endStation = seq[lastIdx];
+            StationBehaviour startStation = seq[firstIdx];
+            int crossCount = GetTotalCrossCount(endStation.transform.position, startStation.transform.position);
+            if (_starTunnelStock < crossCount)
+            {
+                NotifyStarTunnelInsufficient();
+                return false;
+            }
+            _starTunnelStock -= crossCount;
+
             if (aIsFirst) { seq.Insert(0, seq[lastIdx]); }
             else if (aIsLast) { seq.Add(seq[firstIdx]); }
             else if (bIsFirst) { seq.Insert(0, seq[lastIdx]); }
             else if (bIsLast) { seq.Add(seq[firstIdx]); }
+            existingOfColor.segmentStarTunnelCosts.Add(crossCount);
             RefreshAllLinesSharingSegmentsWith(existingOfColor);
             return true;
         }
 
-        if (aIsFirst) { seq.Insert(0, stationB); RefreshAllLinesSharingSegmentsWith(existingOfColor); return true; }
-        if (bIsFirst) { seq.Insert(0, stationA); RefreshAllLinesSharingSegmentsWith(existingOfColor); return true; }
-        if (aIsLast) { seq.Add(stationB); RefreshAllLinesSharingSegmentsWith(existingOfColor); return true; }
-        if (bIsLast) { seq.Add(stationA); RefreshAllLinesSharingSegmentsWith(existingOfColor); return true; }
+        if (aIsFirst)
+        {
+            int crossCount = GetTotalCrossCount(stationB.transform.position, seq[firstIdx].transform.position);
+            if (_starTunnelStock < crossCount) { NotifyStarTunnelInsufficient(); return false; }
+            _starTunnelStock -= crossCount;
+            seq.Insert(0, stationB);
+            existingOfColor.segmentStarTunnelCosts.Insert(0, crossCount);
+            RefreshAllLinesSharingSegmentsWith(existingOfColor);
+            return true;
+        }
+        if (bIsFirst)
+        {
+            int crossCount = GetTotalCrossCount(stationA.transform.position, seq[firstIdx].transform.position);
+            if (_starTunnelStock < crossCount) { NotifyStarTunnelInsufficient(); return false; }
+            _starTunnelStock -= crossCount;
+            seq.Insert(0, stationA);
+            existingOfColor.segmentStarTunnelCosts.Insert(0, crossCount);
+            RefreshAllLinesSharingSegmentsWith(existingOfColor);
+            return true;
+        }
+        if (aIsLast)
+        {
+            int crossCount = GetTotalCrossCount(seq[lastIdx].transform.position, stationB.transform.position);
+            if (_starTunnelStock < crossCount) { NotifyStarTunnelInsufficient(); return false; }
+            _starTunnelStock -= crossCount;
+            seq.Add(stationB);
+            existingOfColor.segmentStarTunnelCosts.Add(crossCount);
+            RefreshAllLinesSharingSegmentsWith(existingOfColor);
+            return true;
+        }
+        if (bIsLast)
+        {
+            int crossCount = GetTotalCrossCount(seq[lastIdx].transform.position, stationA.transform.position);
+            if (_starTunnelStock < crossCount) { NotifyStarTunnelInsufficient(); return false; }
+            _starTunnelStock -= crossCount;
+            seq.Add(stationA);
+            existingOfColor.segmentStarTunnelCosts.Add(crossCount);
+            RefreshAllLinesSharingSegmentsWith(existingOfColor);
+            return true;
+        }
 
         return false;
     }
@@ -147,6 +224,15 @@ public class LineManager : MonoBehaviour, ILineManager
         insertProgress = Mathf.Clamp01(insertProgress);
 
         seq.Insert(segmentIndex + 1, newStation);
+
+        if (line.segmentStarTunnelCosts != null && segmentIndex < line.segmentStarTunnelCosts.Count)
+        {
+            int cost = line.segmentStarTunnelCosts[segmentIndex];
+            int first = cost / 2;
+            int second = cost - first;
+            line.segmentStarTunnelCosts[segmentIndex] = first;
+            line.segmentStarTunnelCosts.Insert(segmentIndex + 1, second);
+        }
 
         foreach (var ship in line.ships)
         {
@@ -271,6 +357,13 @@ public class LineManager : MonoBehaviour, ILineManager
             newSegmentIndex = Mathf.Max(0, seq.Count - 3);
         }
 
+        int costToReturn = 0;
+        if (line.segmentStarTunnelCosts != null && segmentIndex >= 0 && segmentIndex < line.segmentStarTunnelCosts.Count)
+        {
+            costToReturn = line.segmentStarTunnelCosts[segmentIndex];
+            _starTunnelStock += costToReturn;
+        }
+
         for (int i = line.ships.Count - 1; i >= 0; i--)
         {
             var ship = line.ships[i];
@@ -298,7 +391,13 @@ public class LineManager : MonoBehaviour, ILineManager
             }
         }
 
-        seq.Remove(endStation);
+        if (line.segmentStarTunnelCosts != null && line.segmentStarTunnelCosts.Count > 0 && segmentIndex < line.segmentStarTunnelCosts.Count)
+            line.segmentStarTunnelCosts.RemoveAt(segmentIndex);
+
+        if (segmentIndex == 0)
+            seq.RemoveAt(0);
+        else
+            seq.RemoveAt(seq.Count - 1);
 
         if (seq.Count < 2)
         {
@@ -319,8 +418,13 @@ public class LineManager : MonoBehaviour, ILineManager
         if (seq == null || seq.Count < 3) return false;
         if (segmentIndex < 0 || segmentIndex >= seq.Count - 1) return false;
 
-        StationBehaviour breakStart = seq[segmentIndex];
-        StationBehaviour breakEnd = seq[segmentIndex + 1];
+        int costToReturn = 0;
+        if (line.segmentStarTunnelCosts != null && segmentIndex < line.segmentStarTunnelCosts.Count)
+        {
+            costToReturn = line.segmentStarTunnelCosts[segmentIndex];
+            _starTunnelStock += costToReturn;
+            line.segmentStarTunnelCosts.RemoveAt(segmentIndex);
+        }
 
         seq.RemoveAt(seq.Count - 1);
 
@@ -396,6 +500,12 @@ public class LineManager : MonoBehaviour, ILineManager
         if (shipCount > 0)
             _shipStock += shipCount;
 
+        if (line.segmentStarTunnelCosts != null && line.segmentStarTunnelCosts.Count > 0)
+        {
+            int totalCost = line.segmentStarTunnelCosts.Sum();
+            _starTunnelStock += totalCost;
+        }
+
         foreach (var ship in line.ships)
         {
             if (ship != null && ship.gameObject != null)
@@ -403,6 +513,8 @@ public class LineManager : MonoBehaviour, ILineManager
         }
         line.ships.Clear();
         line.stationSequence.Clear();
+        if (line.segmentStarTunnelCosts != null)
+            line.segmentStarTunnelCosts.Clear();
         _lines.Remove(line);
 
         if (linesRoot == null)
@@ -765,37 +877,223 @@ public class LineManager : MonoBehaviour, ILineManager
         if (validCount == 0) return;
         var pts = GetRawVertexPositions(line);
         if (pts == null || pts.Count < 2) return;
-        var smoothPts = new List<Vector3>();
+        Color c = GetColorForLine(line.color);
+        line.displayColor = c;
+
+        bool hasCrossing = line.segmentStarTunnelCosts != null && line.segmentStarTunnelCosts.Count > 0;
+        var solidRuns = new List<List<Vector3>>();
+        var currentRun = new List<Vector3>();
+
         for (int i = 0; i < pts.Count - 1; i++)
         {
+            bool isCrossing = hasCrossing && i < line.segmentStarTunnelCosts.Count && line.segmentStarTunnelCosts[i] > 0;
             Vector3 p0 = i > 0 ? pts[i - 1] : pts[i];
             Vector3 p1 = pts[i];
             Vector3 p2 = pts[i + 1];
             Vector3 p3 = i + 2 < pts.Count ? pts[i + 2] : pts[i + 1];
+
+            if (isCrossing)
+            {
+                if (currentRun.Count > 0)
+                {
+                    var last = pts[i];
+                    last.z = 1f;
+                    currentRun.Add(last);
+                    solidRuns.Add(currentRun);
+                    currentRun = new List<Vector3>();
+                }
+                continue;
+            }
+
+            if (currentRun.Count == 0)
+            {
+                var first = pts[i];
+                first.z = 1f;
+                currentRun.Add(first);
+            }
             for (int k = 0; k < LineSmoothSubdivisions; k++)
             {
                 float t = k / (float)LineSmoothSubdivisions;
                 var pos = CatmullRom(p0, p1, p2, p3, t);
                 pos.z = 1f;
-                smoothPts.Add(pos);
+                currentRun.Add(pos);
             }
         }
-        var last = pts[pts.Count - 1];
-        last.z = 1f;
-        smoothPts.Add(last);
-        lr.positionCount = smoothPts.Count;
-        for (int i = 0; i < smoothPts.Count; i++)
-            lr.SetPosition(i, smoothPts[i]);
-        Color c = GetColorForLine(line.color);
-        line.displayColor = c;
-        lr.startColor = lr.endColor = c;
-        if (lr.material != null)
+        if (currentRun.Count > 0)
         {
-            if (lr.material.HasProperty("_Color"))
-                lr.material.SetColor("_Color", c);
-            if (lr.material.HasProperty("_BaseColor"))
-                lr.material.SetColor("_BaseColor", c);
-            lr.material.color = c;
+            var last = pts[pts.Count - 1];
+            last.z = 1f;
+            currentRun.Add(last);
+            solidRuns.Add(currentRun);
+        }
+
+        Transform solidRoot = go.transform.Find("SolidRuns");
+        if (solidRoot == null)
+        {
+            var solidGo = new GameObject("SolidRuns");
+            solidGo.transform.SetParent(go.transform, false);
+            solidRoot = solidGo.transform;
+        }
+        while (solidRoot.childCount > solidRuns.Count)
+        {
+            var toDestroy = solidRoot.GetChild(solidRoot.childCount - 1);
+            toDestroy.SetParent(null);
+            Destroy(toDestroy.gameObject);
+        }
+        for (int runIdx = 0; runIdx < solidRuns.Count; runIdx++)
+        {
+            var runPts = solidRuns[runIdx];
+            Transform runT = runIdx < solidRoot.childCount ? solidRoot.GetChild(runIdx) : null;
+            if (runT == null)
+            {
+                var runGo = new GameObject("Run_" + runIdx);
+                runGo.transform.SetParent(solidRoot, false);
+                runT = runGo.transform;
+                var newLr = runGo.AddComponent<LineRenderer>();
+                newLr.useWorldSpace = true;
+                newLr.loop = false;
+                newLr.startWidth = newLr.endWidth = 0.1f;
+                newLr.alignment = LineAlignment.View;
+                newLr.material = new Material(GetOrCreateLineMaterial());
+                newLr.numCapVertices = 4;
+                newLr.numCornerVertices = 4;
+            }
+            var runLr = runT.GetComponent<LineRenderer>();
+            if (runLr != null)
+            {
+                runLr.positionCount = runPts.Count;
+                for (int j = 0; j < runPts.Count; j++)
+                    runLr.SetPosition(j, runPts[j]);
+                runLr.startColor = runLr.endColor = c;
+                if (runLr.material != null)
+                {
+                    if (runLr.material.HasProperty("_Color")) runLr.material.SetColor("_Color", c);
+                    if (runLr.material.HasProperty("_BaseColor")) runLr.material.SetColor("_BaseColor", c);
+                }
+                runLr.gameObject.SetActive(true);
+            }
+        }
+
+        if (solidRuns.Count == 0)
+        {
+            lr.positionCount = 0;
+            lr.enabled = false;
+        }
+        else
+        {
+            lr.positionCount = 0;
+            lr.enabled = false;
+        }
+
+        UpdateDashedSegments(go, line, pts, c);
+    }
+
+    private const float DashLength = 0.1f;
+    private const float GapLength = 0.08f;
+
+    private void UpdateDashedSegments(GameObject lineRoot, Line line, List<Vector3> pts, Color c)
+    {
+        Transform dashedRoot = lineRoot.transform.Find("DashedSegments");
+        if (line.segmentStarTunnelCosts == null || line.segmentStarTunnelCosts.Count == 0)
+        {
+            if (dashedRoot != null)
+            {
+                while (dashedRoot.childCount > 0)
+                {
+                    var child = dashedRoot.GetChild(0);
+                    child.SetParent(null);
+                    Destroy(child.gameObject);
+                }
+            }
+            return;
+        }
+
+        if (dashedRoot == null)
+        {
+            var go = new GameObject("DashedSegments");
+            go.transform.SetParent(lineRoot.transform, false);
+            dashedRoot = go.transform;
+        }
+
+        var allDashes = new List<(Vector3 start, Vector3 end)>();
+        for (int i = 0; i < pts.Count - 1 && i < line.segmentStarTunnelCosts.Count; i++)
+        {
+            if (line.segmentStarTunnelCosts[i] <= 0) continue;
+
+            Vector3 p0 = i > 0 ? pts[i - 1] : pts[i];
+            Vector3 p1 = pts[i];
+            Vector3 p2 = pts[i + 1];
+            Vector3 p3 = i + 2 < pts.Count ? pts[i + 2] : pts[i + 1];
+
+            float arcLen = 0f;
+            Vector3 prev = CatmullRom(p0, p1, p2, p3, 0f);
+            Vector3 dashStart = prev;
+            bool inDash = true;
+            const int samples = 64;
+            for (int k = 1; k <= samples; k++)
+            {
+                float t = k / (float)samples;
+                Vector3 curr = CatmullRom(p0, p1, p2, p3, t);
+                arcLen += Vector3.Distance(prev, curr);
+                float phase = arcLen % (DashLength + GapLength);
+                bool nowInDash = phase < DashLength;
+                if (inDash && !nowInDash)
+                {
+                    allDashes.Add((dashStart, prev));
+                    inDash = false;
+                }
+                else if (!inDash && nowInDash)
+                {
+                    dashStart = curr;
+                    inDash = true;
+                }
+                prev = curr;
+            }
+            if (inDash)
+                allDashes.Add((dashStart, prev));
+        }
+
+        while (dashedRoot.childCount > allDashes.Count)
+        {
+            var toDestroy = dashedRoot.GetChild(dashedRoot.childCount - 1);
+            toDestroy.SetParent(null);
+            Destroy(toDestroy.gameObject);
+        }
+
+        for (int idx = 0; idx < allDashes.Count; idx++)
+        {
+            var (start, end) = allDashes[idx];
+            Transform segT = idx < dashedRoot.childCount ? dashedRoot.GetChild(idx) : null;
+            if (segT == null)
+            {
+                var go = new GameObject("Dash_" + idx);
+                go.transform.SetParent(dashedRoot, false);
+                segT = go.transform;
+                var lr = go.AddComponent<LineRenderer>();
+                lr.useWorldSpace = true;
+                lr.loop = false;
+                lr.startWidth = lr.endWidth = 0.1f;
+                lr.alignment = LineAlignment.View;
+                lr.material = new Material(GetOrCreateLineMaterial());
+                lr.numCapVertices = 2;
+                lr.numCornerVertices = 2;
+            }
+            var segLr = segT.GetComponent<LineRenderer>();
+            if (segLr != null)
+            {
+                segLr.positionCount = 2;
+                Vector3 s = new Vector3(start.x, start.y, 0.99f);
+                Vector3 e = new Vector3(end.x, end.y, 0.99f);
+                segLr.SetPosition(0, s);
+                segLr.SetPosition(1, e);
+                segLr.startColor = segLr.endColor = c;
+                if (segLr.material != null)
+                {
+                    if (segLr.material.HasProperty("_Color")) segLr.material.SetColor("_Color", c);
+                    if (segLr.material.HasProperty("_BaseColor")) segLr.material.SetColor("_BaseColor", c);
+                }
+                segLr.gameObject.SetActive(true);
+            }
         }
     }
 

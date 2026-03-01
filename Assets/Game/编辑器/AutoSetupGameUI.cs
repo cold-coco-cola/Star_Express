@@ -643,18 +643,13 @@ public static class AutoSetupGameUI
 
     private static void EnsureColorPickPanelSixButtons(Transform panel)
     {
-        if (panel.Find("Button_黄") != null)
-        {
-            RepositionColorPickButtons(panel);
-            return;
-        }
+        if (panel.Find("Button_黄") != null) return;
         const float bw = 72f, gap = 16f;
         var btnSize = new Vector2(bw, 48f);
         var btnY = MakeButton(panel.transform, "Button_黄", "黄", Color.yellow, new Vector2(-bw - gap, -35), btnSize);
         var btnCy = MakeButton(panel.transform, "Button_青", "青", Color.cyan, new Vector2(0, -35), btnSize);
         var btnM = MakeButton(panel.transform, "Button_品", "品", Color.magenta, new Vector2(bw + gap, -35), btnSize);
         AddButtonClickAnim(btnY, btnCy, btnM);
-        RepositionColorPickButtons(panel);
         var comp = panel.GetComponent<ColorPickPanel>();
         if (comp != null)
         {
@@ -663,32 +658,6 @@ public static class AutoSetupGameUI
             so.FindProperty("buttonCyan").objectReferenceValue = btnCy;
             so.FindProperty("buttonMagenta").objectReferenceValue = btnM;
             so.ApplyModifiedProperties();
-        }
-    }
-
-    /// <summary>统一重排选色面板按钮位置，保证 3 色/6 色布局整齐不重叠。</summary>
-    private static void RepositionColorPickButtons(Transform panel)
-    {
-        const float bw = 72f, gap = 16f;
-        float row1Y = 35f, row2Y = -35f, cancelY = -90f;
-        var posMap = new System.Collections.Generic.Dictionary<string, Vector2>
-        {
-            { "Button_红", new Vector2(-bw - gap, row1Y) },
-            { "Button_绿", new Vector2(0, row1Y) },
-            { "Button_蓝", new Vector2(bw + gap, row1Y) },
-            { "Button_黄", new Vector2(-bw - gap, row2Y) },
-            { "Button_青", new Vector2(0, row2Y) },
-            { "Button_品", new Vector2(bw + gap, row2Y) },
-            { "Button_取消", new Vector2(0, cancelY) }
-        };
-        for (int i = 0; i < panel.childCount; i++)
-        {
-            var child = panel.GetChild(i);
-            if (posMap.TryGetValue(child.name, out var pos))
-            {
-                var rt = child.GetComponent<RectTransform>();
-                if (rt != null) rt.anchoredPosition = pos;
-            }
         }
     }
 

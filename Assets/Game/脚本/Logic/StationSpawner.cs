@@ -10,9 +10,11 @@ public class StationSpawner : MonoBehaviour
 {
     private int GetSpawnCount(int week)
     {
+        if (week == 0) return 2;
         if (week == 1) return 2;
-        if (week <= 4) return 2;
-        return Random.value < 0.5f ? 2 : 3; // 第5周起随机2或3个
+        if (week <= 3) return 2;
+        if (week <= 6) return Random.value < 0.4f ? 2 : 3;
+        return Random.value < 0.3f ? 3 : 4; // 第7周起倾向3~4个，扩张更快
     }
 
     private const float SpawnWindowStart = 0.2f;
@@ -27,7 +29,7 @@ public class StationSpawner : MonoBehaviour
     private const int StrictAttempts = 50;
     private const int RelaxedAttempts = 30;
     private const float RelaxedMinDFactor = 0.55f;
-    private const float RelaxedMaxDFactor = 1.2f;
+    private const float RelaxedMaxDFactor = 1.35f;
 
     private float _weekTimer;
     private readonly List<float> _scheduledSpawnTimes = new List<float>();
@@ -227,13 +229,16 @@ public class StationSpawner : MonoBehaviour
         var lm = gm != null ? gm.GetLineManagerComponent() : null;
         var allLines = lm != null ? lm.Lines : null;
 
+        var beltCenters = GetAsteroidBeltCenters();
+
         Vector2 centroid = ComputeCentroid(list);
-        float preferredAngle = GetPreferredSpawnAngle(centroid, list);
+        int week = gm != null ? gm.CurrentWeek : 0;
+        float preferredAngle = GetPreferredSpawnAngle(centroid, list, beltCenters, week);
         float avgDistFromCentroid = GetAverageDistanceFromCentroid(centroid, list);
 
         for (int attempt = 0; attempt < StrictAttempts; attempt++)
         {
-            if (TryFindValidPosition(centroid, preferredAngle, minD, maxD, minFromLine, minFromEndpoint, avgDistFromCentroid, list.Count, config, allLines, list, out SpawnResult result))
+            if (TryFindValidPosition(centroid, preferredAngle, minD, maxD, minFromLine, minFromEndpoint, avgDistFromCentroid, list.Count, config, allLines, list, beltCenters, out SpawnResult result))
                 return result;
         }
 
@@ -241,20 +246,69 @@ public class StationSpawner : MonoBehaviour
         float relaxedMinFromEndpoint = minFromEndpoint * 0.5f;
         for (int attempt = 0; attempt < RelaxedAttempts; attempt++)
         {
-            if (TryFindValidPosition(centroid, preferredAngle, relaxedMinD, maxD * RelaxedMaxDFactor, relaxedMinD * MinDistanceFromLineFactor, relaxedMinFromEndpoint, avgDistFromCentroid, list.Count, config, allLines, list, out SpawnResult result))
+            if (TryFindValidPosition(centroid, preferredAngle, relaxedMinD, maxD * RelaxedMaxDFactor, relaxedMinD * MinDistanceFromLineFactor, relaxedMinFromEndpoint, avgDistFromCentroid, list.Count, config, allLines, list, beltCenters, out SpawnResult result))
                 return result;
         }
 
         if (allLines != null && allLines.Count > 0 && config != null && config.spawnSnapToLineThreshold > 0)
         {
             var snap = TryFindAnyValidSnap(allLines, list, relaxedMinFromEndpoint);
-            if (snap.HasValue) return snap.Value;
+            if (snap.HasValue && !IsPointInsideAnyAsteroidBelt(new Vector2(snap.Value.position.x, snap.Value.position.y), StationBeltAvoidMargin))
+                return snap.Value;
         }
 
         return null;
     }
 
-    private bool TryFindValidPosition(Vector2 centroid, float preferredAngle, float minD, float maxD, float minFromLine, float minFromEndpoint, float avgDistFromCentroid, int stationCount, LevelConfig config, IReadOnlyList<Line> allLines, List<StationBehaviour> list, out SpawnResult result)
+    /// <summary>获取场景中所有陨石带（优先从 Map/AsteroidBelts 下收集，否则全场景查找）。</summary>
+    private static AsteroidBeltBehaviour[] GetAllAsteroidBelts()
+    {
+        var list = new List<AsteroidBeltBehaviour>();
+        var map = GameObject.Find("Map");
+        var beltsRoot = map != null ? map.transform.Find("AsteroidBelts") : null;
+        if (beltsRoot == null) beltsRoot = GameObject.Find("AsteroidBelts")?.transform;
+        if (beltsRoot != null)
+        {
+            foreach (Transform child in beltsRoot)
+            {
+                var b = child.GetComponent<AsteroidBeltBehaviour>();
+                if (b != null) list.Add(b);
+            }
+        }
+        if (list.Count == 0)
+            list.AddRange(Object.FindObjectsOfType<AsteroidBeltBehaviour>());
+        return list.ToArray();
+    }
+
+    private static List<Vector2> GetAsteroidBeltCenters()
+    {
+        var belts = GetAllAsteroidBelts();
+        if (belts == null || belts.Length == 0) return null;
+        var centers = new List<Vector2>();
+        foreach (var b in belts)
+        {
+            if (b == null) continue;
+            var c = b.GetBeltCenter();
+            if (c.HasValue) centers.Add(c.Value);
+        }
+        return centers.Count > 0 ? centers : null;
+    }
+
+    /// <summary>站点视觉半径约 0.7，用于扩展陨石带避让检测范围，避免站点与陨石带视觉重叠。</summary>
+    private const float StationBeltAvoidMargin = 0.7f;
+
+    private static bool IsPointInsideAnyAsteroidBelt(Vector2 p, float margin = 0f)
+    {
+        var belts = GetAllAsteroidBelts();
+        if (belts == null) return false;
+        foreach (var b in belts)
+        {
+            if (b != null && b.IsPointInsideBelt(p, margin)) return true;
+        }
+        return false;
+    }
+
+    private bool TryFindValidPosition(Vector2 centroid, float preferredAngle, float minD, float maxD, float minFromLine, float minFromEndpoint, float avgDistFromCentroid, int stationCount, LevelConfig config, IReadOnlyList<Line> allLines, List<StationBehaviour> list, List<Vector2> beltCenters, out SpawnResult result)
     {
         result = default;
         float snapThreshold = config != null && config.spawnSnapToLineThreshold > 0
@@ -263,24 +317,27 @@ public class StationSpawner : MonoBehaviour
 
         float angleJitter = Random.Range(-90f, 90f) * Mathf.Deg2Rad;
         float angle = (preferredAngle * Mathf.Deg2Rad) + angleJitter;
-        // 整体扩张趋势：新站倾向在「当前平均半径」之外；后期增强向外倾向
+        // 整体扩张趋势：新站倾向在「当前平均半径」之外；扩张速度加快
         float frontier = Mathf.Clamp(avgDistFromCentroid, minD, maxD * 0.95f);
         float dist;
         if (stationCount >= 18)
         {
-            dist = frontier + Random.Range(0.55f, 1f) * Mathf.Max(0.1f, maxD - frontier);
+            dist = frontier + Random.Range(0.65f, 1.15f) * Mathf.Max(0.1f, maxD - frontier);
         }
         else if (stationCount >= 12)
         {
-            dist = frontier + Random.Range(0.35f, 1f) * Mathf.Max(0.1f, maxD - frontier);
+            dist = frontier + Random.Range(0.5f, 1.1f) * Mathf.Max(0.1f, maxD - frontier);
         }
         else
         {
-            dist = frontier + Random.Range(0f, Mathf.Max(0.1f, maxD - frontier));
+            dist = frontier + Random.Range(0.2f, 1f) * Mathf.Max(0.1f, maxD - frontier);
         }
         dist = Mathf.Clamp(dist, minD, maxD);
         Vector2 offset = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * dist;
         Vector3 candidate = new Vector3(centroid.x + offset.x, centroid.y + offset.y, 0f);
+
+        if (IsPointInsideAnyAsteroidBelt(new Vector2(candidate.x, candidate.y), StationBeltAvoidMargin))
+            return false;
 
         foreach (var s in list)
         {
@@ -292,6 +349,8 @@ public class StationSpawner : MonoBehaviour
             var snap = TryFindSnapPosition(config, candidate, allLines, list, minFromLine, snapThreshold, minFromEndpoint);
             if (snap.HasValue)
             {
+                if (IsPointInsideAnyAsteroidBelt(new Vector2(snap.Value.position.x, snap.Value.position.y), StationBeltAvoidMargin))
+                    return false;
                 result = snap.Value;
                 return true;
             }
@@ -394,13 +453,13 @@ public class StationSpawner : MonoBehaviour
         return Vector2.Distance(new Vector2(p.x, p.y), closest2);
     }
 
-    /// <summary>后期站点增多时，增大最小距离限制，避免过密。</summary>
+    /// <summary>后期站点增多时，增大最小距离限制，避免过密。整体略放宽以配合扩张加速。</summary>
     private static float GetLateGameDistanceScale(int stationCount)
     {
         if (stationCount < 12) return 1f;
-        if (stationCount < 24) return 1f + (stationCount - 12) * 0.02f;
-        if (stationCount < 36) return 1.24f + (stationCount - 24) * 0.025f;
-        return Mathf.Min(1.8f, 1.54f + (stationCount - 36) * 0.015f);
+        if (stationCount < 24) return 1f + (stationCount - 12) * 0.025f;
+        if (stationCount < 36) return 1.3f + (stationCount - 24) * 0.03f;
+        return Mathf.Min(1.9f, 1.66f + (stationCount - 36) * 0.02f);
     }
 
     /// <summary>计算所有站点的质心。</summary>
@@ -422,10 +481,16 @@ public class StationSpawner : MonoBehaviour
         return sum / list.Count;
     }
 
-    /// <summary>根据各扇区站点数量，加权随机返回优先生成角度（度），偏少但不绝对。</summary>
-    private static float GetPreferredSpawnAngle(Vector2 centroid, List<StationBehaviour> list)
+    /// <summary>根据各扇区站点数量与陨石带位置，加权随机返回优先生成角度（度）。陨石带所在扇区权重降低。第一周固定向上（90 度）。</summary>
+    private static float GetPreferredSpawnAngle(Vector2 centroid, List<StationBehaviour> list, List<Vector2> beltCenters = null, int week = 0)
     {
+        if (week == 0)
+        {
+            return 90f;
+        }
+
         const int sectorCount = 8;
+        float sectorSpan = 360f / sectorCount;
         var counts = new int[sectorCount];
         int maxCount = 0;
         foreach (var s in list)
@@ -433,28 +498,40 @@ public class StationSpawner : MonoBehaviour
             Vector2 delta = (Vector2)s.transform.position - centroid;
             float angle = Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg;
             if (angle < 0) angle += 360f;
-            int sector = Mathf.Clamp((int)(angle / (360f / sectorCount)), 0, sectorCount - 1);
+            int sector = Mathf.Clamp((int)(angle / sectorSpan), 0, sectorCount - 1);
             counts[sector]++;
             if (counts[sector] > maxCount) maxCount = counts[sector];
         }
 
-        // 加权随机：站点少的扇区权重更高，但不绝对
-        float totalWeight = 0f;
+        var weights = new float[sectorCount];
         for (int i = 0; i < sectorCount; i++)
         {
             float w = maxCount - counts[i] + 1f;
-            totalWeight += w;
+            if (beltCenters != null && beltCenters.Count > 0)
+            {
+                foreach (var bc in beltCenters)
+                {
+                    Vector2 toBelt = bc - centroid;
+                    if (toBelt.sqrMagnitude < 0.01f) continue;
+                    float beltAngle = Mathf.Atan2(toBelt.y, toBelt.x) * Mathf.Rad2Deg;
+                    if (beltAngle < 0) beltAngle += 360f;
+                    int beltSector = Mathf.Clamp((int)(beltAngle / sectorSpan), 0, sectorCount - 1);
+                    if (beltSector == i) { w *= 0.25f; break; }
+                }
+            }
+            weights[i] = Mathf.Max(0.01f, w);
         }
+
+        float totalWeight = 0f;
+        for (int i = 0; i < sectorCount; i++) totalWeight += weights[i];
         float r = Random.Range(0f, totalWeight);
         int chosen = 0;
         for (int i = 0; i < sectorCount; i++)
         {
-            float w = maxCount - counts[i] + 1f;
-            r -= w;
+            r -= weights[i];
             if (r <= 0) { chosen = i; break; }
         }
 
-        float sectorSpan = 360f / sectorCount;
         return chosen * sectorSpan + sectorSpan * 0.5f;
     }
 

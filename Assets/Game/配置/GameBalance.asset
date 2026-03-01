@@ -21,7 +21,7 @@ MonoBehaviour:
   weekDurationSeconds: 90
   shipCapacity: 4
   carriageCapacityIncrement: 2
-  shipSpeedUnitsPerSecond: 1.5
+  shipSpeedUnitsPerSecond: 1.85
   dockDurationSeconds: 1
   shapeTypeCount: 4
   lineColorCount: 3

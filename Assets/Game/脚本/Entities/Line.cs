@@ -13,6 +13,9 @@ public class Line
     public List<StationBehaviour> stationSequence = new List<StationBehaviour>();
     public List<ShipBehaviour> ships = new List<ShipBehaviour>();
 
+    /// <summary>每个线段消耗的星燧数量，索引与 stationSequence 对应（N个站点有N-1个线段）。</summary>
+    public List<int> segmentStarTunnelCosts = new List<int>();
+
     public Line(string lineId, LineColor lineColor)
     {
         id = lineId;
