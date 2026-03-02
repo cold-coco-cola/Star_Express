@@ -453,13 +453,13 @@ public class StationSpawner : MonoBehaviour
         return Vector2.Distance(new Vector2(p.x, p.y), closest2);
     }
 
-    /// <summary>后期站点增多时，增大最小距离限制，避免过密。整体略放宽以配合扩张加速。</summary>
+    /// <summary>后期站点增多时，增大最小距离限制，避免过密。</summary>
     private static float GetLateGameDistanceScale(int stationCount)
     {
         if (stationCount < 12) return 1f;
-        if (stationCount < 24) return 1f + (stationCount - 12) * 0.025f;
-        if (stationCount < 36) return 1.3f + (stationCount - 24) * 0.03f;
-        return Mathf.Min(1.9f, 1.66f + (stationCount - 36) * 0.02f);
+        if (stationCount < 24) return 1f + (stationCount - 12) * 0.02f;
+        if (stationCount < 36) return 1.24f + (stationCount - 24) * 0.025f;
+        return Mathf.Min(1.8f, 1.54f + (stationCount - 36) * 0.015f);
     }
 
     /// <summary>计算所有站点的质心。</summary>
@@ -481,7 +481,7 @@ public class StationSpawner : MonoBehaviour
         return sum / list.Count;
     }
 
-    /// <summary>根据各扇区站点数量与陨石带位置，加权随机返回优先生成角度（度）。陨石带所在扇区权重降低。第一周固定向上（90 度）。</summary>
+    /// <summary>根据各扇区站点数量返回优先生成角度（度）。优先向上、左右上方扩张，避免向下。</summary>
     private static float GetPreferredSpawnAngle(Vector2 centroid, List<StationBehaviour> list, List<Vector2> beltCenters = null, int week = 0)
     {
         if (week == 0)
@@ -503,22 +503,13 @@ public class StationSpawner : MonoBehaviour
             if (counts[sector] > maxCount) maxCount = counts[sector];
         }
 
+        // 方向权重：上=2.5，左右上=2.0，左右=1.5，下=0.5
+        float[] directionWeights = new float[] { 1.8f, 2.0f, 2.0f, 1.5f, 1.5f, 0.6f, 0.6f, 1.8f };
+
         var weights = new float[sectorCount];
         for (int i = 0; i < sectorCount; i++)
         {
-            float w = maxCount - counts[i] + 1f;
-            if (beltCenters != null && beltCenters.Count > 0)
-            {
-                foreach (var bc in beltCenters)
-                {
-                    Vector2 toBelt = bc - centroid;
-                    if (toBelt.sqrMagnitude < 0.01f) continue;
-                    float beltAngle = Mathf.Atan2(toBelt.y, toBelt.x) * Mathf.Rad2Deg;
-                    if (beltAngle < 0) beltAngle += 360f;
-                    int beltSector = Mathf.Clamp((int)(beltAngle / sectorSpan), 0, sectorCount - 1);
-                    if (beltSector == i) { w *= 0.25f; break; }
-                }
-            }
+            float w = (maxCount - counts[i] + 1f) * directionWeights[i];
             weights[i] = Mathf.Max(0.01f, w);
         }
 

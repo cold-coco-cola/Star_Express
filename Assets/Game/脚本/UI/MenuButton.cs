@@ -104,6 +104,9 @@ namespace Game.Scripts.UI
             Sprite startSprite = _bgImage != null ? _bgImage.sprite : _originalSprite;
             Sprite targetSprite = highlight && hoverSprite != null ? hoverSprite : _originalSprite;
 
+            if (_bgImage != null && hoverSprite != null)
+                _bgImage.sprite = targetSprite;
+
             float t = 0f;
             while (t < 1f)
             {
@@ -112,8 +115,6 @@ namespace Game.Scripts.UI
                 if (_bgImage != null)
                 {
                     _bgImage.color = Color.Lerp(startBg, targetBg, ease);
-                    if (hoverSprite != null)
-                        _bgImage.sprite = t > 0.5f ? targetSprite : startSprite;
                 }
                 if (!_hasClickAnim)
                 {
@@ -123,7 +124,7 @@ namespace Game.Scripts.UI
                 }
                 if (buttonText != null)
                     buttonText.color = Color.Lerp(startColor, targetColor, ease);
-                if (highlightIcon != null && t > 0.5f)
+                if (highlightIcon != null)
                     highlightIcon.enabled = highlight;
                 yield return null;
             }

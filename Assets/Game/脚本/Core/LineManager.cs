@@ -61,18 +61,17 @@ public class LineManager : MonoBehaviour, ILineManager
 #endif
     }
 
-    /// <summary>获取线段AB穿越所有陨石带的总次数。</summary>
-    public int GetTotalCrossCount(Vector2 a, Vector2 b)
+    /// <summary>检测线段 AB 是否经过任意陨石带。</summary>
+    public bool HasAnyCrossing(Vector2 a, Vector2 b)
     {
         var belts = FindObjectsOfType<AsteroidBeltBehaviour>();
-        if (belts == null || belts.Length == 0) return 0;
-        int total = 0;
+        if (belts == null || belts.Length == 0) return false;
         foreach (var belt in belts)
         {
-            if (belt != null)
-                total += belt.GetCrossCount(a, b);
+            if (belt != null && belt.HasCrossing(a, b))
+                return true;
         }
-        return total;
+        return false;
     }
 
     private static void NotifyStarTunnelInsufficient()
@@ -104,18 +103,20 @@ public class LineManager : MonoBehaviour, ILineManager
             if (_lines.Count >= _maxLineCount) return false;
             if (_shipStock <= 0) return false;
 
-            int crossCount = GetTotalCrossCount(stationA.transform.position, stationB.transform.position);
-            if (_starTunnelStock < crossCount)
+            bool hasCrossing = HasAnyCrossing(stationA.transform.position, stationB.transform.position);
+            int starTunnelCost = hasCrossing ? 1 : 0;
+            
+            if (_starTunnelStock < starTunnelCost)
             {
                 NotifyStarTunnelInsufficient();
                 return false;
             }
-            _starTunnelStock -= crossCount;
+            _starTunnelStock -= starTunnelCost;
 
             var line = new Line("Line_" + (_nextLineId++), color);
             line.stationSequence.Add(stationA);
             line.stationSequence.Add(stationB);
-            line.segmentStarTunnelCosts.Add(crossCount);
+            line.segmentStarTunnelCosts.Add(starTunnelCost);
             _lines.Add(line);
             RefreshAllLinesSharingSegmentsWith(line);
             SpawnShip(line, true);
@@ -154,60 +155,70 @@ public class LineManager : MonoBehaviour, ILineManager
         {
             StationBehaviour endStation = seq[lastIdx];
             StationBehaviour startStation = seq[firstIdx];
-            int crossCount = GetTotalCrossCount(endStation.transform.position, startStation.transform.position);
-            if (_starTunnelStock < crossCount)
+            bool hasCrossing = HasAnyCrossing(endStation.transform.position, startStation.transform.position);
+            int starTunnelCost = hasCrossing ? 1 : 0;
+            
+            if (_starTunnelStock < starTunnelCost)
             {
                 NotifyStarTunnelInsufficient();
                 return false;
             }
-            _starTunnelStock -= crossCount;
+            _starTunnelStock -= starTunnelCost;
 
             if (aIsFirst) { seq.Insert(0, seq[lastIdx]); }
             else if (aIsLast) { seq.Add(seq[firstIdx]); }
             else if (bIsFirst) { seq.Insert(0, seq[lastIdx]); }
             else if (bIsLast) { seq.Add(seq[firstIdx]); }
-            existingOfColor.segmentStarTunnelCosts.Add(crossCount);
+            existingOfColor.segmentStarTunnelCosts.Add(starTunnelCost);
             RefreshAllLinesSharingSegmentsWith(existingOfColor);
             return true;
         }
 
         if (aIsFirst)
         {
-            int crossCount = GetTotalCrossCount(stationB.transform.position, seq[firstIdx].transform.position);
-            if (_starTunnelStock < crossCount) { NotifyStarTunnelInsufficient(); return false; }
-            _starTunnelStock -= crossCount;
+            bool hasCrossing = HasAnyCrossing(stationB.transform.position, seq[firstIdx].transform.position);
+            int starTunnelCost = hasCrossing ? 1 : 0;
+            
+            if (_starTunnelStock < starTunnelCost) { NotifyStarTunnelInsufficient(); return false; }
+            _starTunnelStock -= starTunnelCost;
             seq.Insert(0, stationB);
-            existingOfColor.segmentStarTunnelCosts.Insert(0, crossCount);
+            existingOfColor.segmentStarTunnelCosts.Insert(0, starTunnelCost);
             RefreshAllLinesSharingSegmentsWith(existingOfColor);
             return true;
         }
         if (bIsFirst)
         {
-            int crossCount = GetTotalCrossCount(stationA.transform.position, seq[firstIdx].transform.position);
-            if (_starTunnelStock < crossCount) { NotifyStarTunnelInsufficient(); return false; }
-            _starTunnelStock -= crossCount;
+            bool hasCrossing = HasAnyCrossing(stationA.transform.position, seq[firstIdx].transform.position);
+            int starTunnelCost = hasCrossing ? 1 : 0;
+            
+            if (_starTunnelStock < starTunnelCost) { NotifyStarTunnelInsufficient(); return false; }
+            _starTunnelStock -= starTunnelCost;
             seq.Insert(0, stationA);
-            existingOfColor.segmentStarTunnelCosts.Insert(0, crossCount);
+            existingOfColor.segmentStarTunnelCosts.Insert(0, starTunnelCost);
             RefreshAllLinesSharingSegmentsWith(existingOfColor);
             return true;
         }
         if (aIsLast)
         {
-            int crossCount = GetTotalCrossCount(seq[lastIdx].transform.position, stationB.transform.position);
-            if (_starTunnelStock < crossCount) { NotifyStarTunnelInsufficient(); return false; }
-            _starTunnelStock -= crossCount;
+            bool hasCrossing = HasAnyCrossing(seq[lastIdx].transform.position, stationB.transform.position);
+            int starTunnelCost = hasCrossing ? 1 : 0;
+            
+            if (_starTunnelStock < starTunnelCost) { NotifyStarTunnelInsufficient(); return false; }
+            _starTunnelStock -= starTunnelCost;
             seq.Add(stationB);
-            existingOfColor.segmentStarTunnelCosts.Add(crossCount);
+            existingOfColor.segmentStarTunnelCosts.Add(starTunnelCost);
             RefreshAllLinesSharingSegmentsWith(existingOfColor);
             return true;
         }
         if (bIsLast)
         {
-            int crossCount = GetTotalCrossCount(seq[lastIdx].transform.position, stationA.transform.position);
-            if (_starTunnelStock < crossCount) { NotifyStarTunnelInsufficient(); return false; }
-            _starTunnelStock -= crossCount;
+            bool hasCrossing = HasAnyCrossing(seq[lastIdx].transform.position, stationA.transform.position);
+            int starTunnelCost = hasCrossing ? 1 : 0;
+            
+            if (_starTunnelStock < starTunnelCost) { NotifyStarTunnelInsufficient(); return false; }
+            _starTunnelStock -= starTunnelCost;
             seq.Add(stationA);
-            existingOfColor.segmentStarTunnelCosts.Add(crossCount);
+            existingOfColor.segmentStarTunnelCosts.Add(starTunnelCost);
             RefreshAllLinesSharingSegmentsWith(existingOfColor);
             return true;
         }

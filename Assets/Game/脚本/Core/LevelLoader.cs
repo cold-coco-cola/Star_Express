@@ -10,14 +10,14 @@ public static class LevelLoader
     private static Sprite _placeholderSprite;
 
     /// <summary>站点 Visual 统一世界尺寸（直径约该值），保证 7 颗星视觉大小一致。</summary>
-    public const float StationVisualWorldSize = 0.7f;
+    public const float StationVisualWorldSize = 0.8f;
     /// <summary>站点间距缩放，使站点更分散。</summary>
     public const float StationPositionScale = 1.8f;
 
     /// <summary>各形状的额外缩放倍率（按 ShapeType 索引：Circle, Triangle, Square, Star, Hexagon, Sector, Cross, Capsule）</summary>
     private static readonly float[] ShapeScaleMultipliers = new float[]
     {
-        1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.25f, 1.0f, 1.0f
+        1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.25f, 1.35f, 1.0f
     };
 
     public static float GetShapeScaleMultiplier(ShapeType shapeType)

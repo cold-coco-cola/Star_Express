@@ -152,21 +152,20 @@ public class AsteroidBeltBehaviour : MonoBehaviour
     }
 #endif
 
-    /// <summary>获取线段 AB 穿越本陨石带的次数（每段相交计 crossCost）。</summary>
-    public int GetCrossCount(Vector2 a, Vector2 b)
+    /// <summary>检测线段 AB 是否与陨石带有任何交集。</summary>
+    public bool HasCrossing(Vector2 a, Vector2 b)
     {
         var pathPoints = GetPathPoints();
-        if (pathPoints == null || pathPoints.Count < 2) return 0;
+        if (pathPoints == null || pathPoints.Count < 2) return false;
 
-        int count = 0;
         for (int i = 0; i < pathPoints.Count - 1; i++)
         {
             Vector2 p1 = pathPoints[i];
             Vector2 p2 = pathPoints[i + 1];
             if (LineSegmentIntersectsBeltSegment(a, b, p1, p2))
-                count++;
+                return true;
         }
-        return count * crossCost;
+        return false;
     }
 
 #if UNITY_EDITOR
