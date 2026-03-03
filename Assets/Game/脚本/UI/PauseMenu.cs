@@ -69,6 +69,9 @@ public class PauseMenu : BasePanel
         PlayerPrefs.Save();
         if (GlobalBackgroundMusic.Instance != null)
             GlobalBackgroundMusic.Instance.SetVolume(v);
+        var levelBg = FindObjectOfType<LevelBackgroundMusic>();
+        if (levelBg != null)
+            levelBg.SetVolume(v);
     }
 
     private void OnSFXVolumeChanged(float v)

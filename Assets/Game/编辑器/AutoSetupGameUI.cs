@@ -833,20 +833,16 @@ public static class AutoSetupGameUI
         hintT.alignment = TextAnchor.MiddleCenter;
 
         float optY = -20;
-        var (o1, icon1, desc1, name1) = MakeRewardOptionCard(panel.transform, "Option1", new Vector2(-layout.buttonSize.x * 0.5f - layout.buttonGap * 0.5f, optY), layout.buttonSize);
-        var (o2, icon2, desc2, name2) = MakeRewardOptionCard(panel.transform, "Option2", new Vector2(layout.buttonSize.x * 0.5f + layout.buttonGap * 0.5f, optY), layout.buttonSize);
+        var (o1, icon1) = MakeRewardOptionCard(panel.transform, "Option1", new Vector2(-layout.buttonSize.x * 0.5f - layout.buttonGap * 0.5f, optY), layout.buttonSize);
+        var (o2, icon2) = MakeRewardOptionCard(panel.transform, "Option2", new Vector2(layout.buttonSize.x * 0.5f + layout.buttonGap * 0.5f, optY), layout.buttonSize);
 
         var comp = panel.AddComponent<WeekRewardSelectionPopup>();
         var so = new SerializedObject(comp);
         so.FindProperty("weekText").objectReferenceValue = weekT;
         so.FindProperty("hintText").objectReferenceValue = hintT;
         so.FindProperty("option1Button").objectReferenceValue = o1;
-        so.FindProperty("option1Label").objectReferenceValue = name1;
-        so.FindProperty("option1Desc").objectReferenceValue = desc1;
         so.FindProperty("option1Icon").objectReferenceValue = icon1;
         so.FindProperty("option2Button").objectReferenceValue = o2;
-        so.FindProperty("option2Label").objectReferenceValue = name2;
-        so.FindProperty("option2Desc").objectReferenceValue = desc2;
         so.FindProperty("option2Icon").objectReferenceValue = icon2;
         so.ApplyModifiedProperties();
         AddButtonClickAnim(o1, o2);
@@ -863,8 +859,8 @@ public static class AutoSetupGameUI
         return (new Vector2(480, 400), new Vector2(180, 200), 30f);
     }
 
-    /// <summary>肉鸽风格奖励卡片：背景 → 图标(60-65%) → 描述(15-20%) → 名称(20%)。</summary>
-    private static (Button button, Image iconImage, Text descText, Text nameText) MakeRewardOptionCard(Transform parent, string name, Vector2 pos, Vector2 size)
+    /// <summary>奖励选项卡片：整卡 Button + 铺满的 Icon（三张图对应 Carriage/StarTunnel/NewLine），无 Desc/Name 文本。</summary>
+    private static (Button button, Image iconImage) MakeRewardOptionCard(Transform parent, string name, Vector2 pos, Vector2 size)
     {
         var go = MakeRect(parent, name);
         var r = go.GetComponent<RectTransform>();
@@ -881,41 +877,15 @@ public static class AutoSetupGameUI
 
         var iconGo = MakeRect(go.transform, "Icon");
         var iconRt = iconGo.GetComponent<RectTransform>();
-        iconRt.anchorMin = new Vector2(0, 0.35f);
-        iconRt.anchorMax = new Vector2(1, 1);
-        iconRt.offsetMin = new Vector2(8, 8);
-        iconRt.offsetMax = new Vector2(-8, -8);
+        iconRt.anchorMin = Vector2.zero;
+        iconRt.anchorMax = Vector2.one;
+        iconRt.offsetMin = Vector2.zero;
+        iconRt.offsetMax = Vector2.zero;
         var iconImg = iconGo.AddComponent<Image>();
-        iconImg.color = new Color(0.3f, 0.35f, 0.45f);
+        iconImg.color = Color.white;
         iconImg.raycastTarget = false;
 
-        var descGo = MakeRect(go.transform, "DescText");
-        var descRt = descGo.GetComponent<RectTransform>();
-        descRt.anchorMin = new Vector2(0, 0.2f);
-        descRt.anchorMax = new Vector2(1, 0.35f);
-        descRt.offsetMin = new Vector2(6, 2);
-        descRt.offsetMax = new Vector2(-6, -2);
-        var descTxt = descGo.AddComponent<Text>();
-        descTxt.text = "";
-        descTxt.font = GameUIFonts.Default;
-        descTxt.fontSize = 12;
-        descTxt.alignment = TextAnchor.MiddleCenter;
-        descTxt.color = new Color(0.85f, 0.88f, 0.92f);
-
-        var nameGo = MakeRect(go.transform, "NameText");
-        var nameRt = nameGo.GetComponent<RectTransform>();
-        nameRt.anchorMin = Vector2.zero;
-        nameRt.anchorMax = new Vector2(1, 0.2f);
-        nameRt.offsetMin = new Vector2(6, 2);
-        nameRt.offsetMax = new Vector2(-6, -2);
-        var nameTxt = nameGo.AddComponent<Text>();
-        nameTxt.text = "";
-        nameTxt.font = GameUIFonts.Default;
-        nameTxt.fontSize = 16;
-        nameTxt.alignment = TextAnchor.MiddleCenter;
-        nameTxt.color = Color.white;
-
-        return (btn, iconImg, descTxt, nameTxt);
+        return (btn, iconImg);
     }
 
     private static bool EnsureGameOverPopup(Transform parent)
