@@ -59,6 +59,7 @@ public class GameManager : MonoBehaviour
     private Dictionary<StationBehaviour, float> _deathCrowdTimers = new Dictionary<StationBehaviour, float>();
     private bool _waitingWeekRewardSelection;
     private int _pendingWeekForReward;
+    private float _savedTimeScale = 1f;
 
     public int CurrentWeek => currentWeek;
     public bool IsPausedForWeekReward => _waitingWeekRewardSelection;
@@ -130,7 +131,8 @@ public class GameManager : MonoBehaviour
         isGameOver = false;
         IsPausedByUser = false;
         _levelLoaded = false;
-        Time.timeScale = 1f;
+        _savedTimeScale = 1f;
+        Time.timeScale = _savedTimeScale;
 
         if (levelConfig == null)
         {
@@ -270,7 +272,7 @@ public class GameManager : MonoBehaviour
             ApplyRewardOption(lm, chosen);
         }
         _waitingWeekRewardSelection = false;
-        Time.timeScale = 1f;
+        Time.timeScale = _savedTimeScale;
         OnWeekReward?.Invoke(_pendingWeekForReward, ResourceType.Ship);
         string optName = chosen == WeekRewardSelectionPopup.RewardOption.Carriage ? "客舱" :
             chosen == WeekRewardSelectionPopup.RewardOption.StarTunnel ? "星隧" : "新线路";
@@ -288,8 +290,28 @@ public class GameManager : MonoBehaviour
     {
         if (_waitingWeekRewardSelection) return;
         IsPausedByUser = paused;
-        Time.timeScale = paused ? 0f : 1f;
+        if (paused)
+        {
+            _savedTimeScale = Time.timeScale;
+            Time.timeScale = 0f;
+        }
+        else
+        {
+            Time.timeScale = _savedTimeScale;
+        }
     }
+
+    /// <summary>设置游戏速度（由 TimeSpeedPanel 调用）。</summary>
+    public void SetGameSpeed(float speed)
+    {
+        _savedTimeScale = speed;
+        if (!IsPausedByUser && !IsPausedForWeekReward && !isGameOver)
+        {
+            Time.timeScale = speed;
+        }
+    }
+
+    public float SavedTimeScale => _savedTimeScale;
 
     private static void ApplyRewardOption(LineManager lm, WeekRewardSelectionPopup.RewardOption opt)
     {

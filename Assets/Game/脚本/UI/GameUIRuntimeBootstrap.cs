@@ -34,7 +34,7 @@ public class GameUIRuntimeBootstrap : MonoBehaviour
         }
     }
 
-    /// <summary>从 LevelSelect 进入关卡时，重新显示被隐藏的 GameCanvas。</summary>
+    /// <summary>从 LevelSelect 进入关卡时，重新显示被隐藏的 GameCanvas，并确保 TimeSpeedPanel 存在。</summary>
     private static void EnsureGameCanvasVisibleInLevel()
     {
         var canvases = Object.FindObjectsOfType<Canvas>(true);
@@ -42,6 +42,30 @@ public class GameUIRuntimeBootstrap : MonoBehaviour
         {
             if (c != null && c.gameObject.name == "GameCanvas")
                 c.gameObject.SetActive(true);
+        }
+
+        EnsureTimeSpeedPanelInScene();
+    }
+
+    /// <summary>确保场景中的 GameCanvas 下有 TimeSpeedPanel 并显示。</summary>
+    private static void EnsureTimeSpeedPanelInScene()
+    {
+        var activeScene = SceneManager.GetActiveScene();
+        foreach (var root in activeScene.GetRootGameObjects())
+        {
+            if (root.name == "GameCanvas")
+            {
+                var panel = root.transform.Find("TimeSpeedPanel");
+                if (panel == null)
+                {
+                    CreateTimeSpeedPanel(root.transform);
+                }
+                else
+                {
+                    panel.gameObject.SetActive(true);
+                }
+                return;
+            }
         }
     }
 
@@ -79,12 +103,20 @@ public class GameUIRuntimeBootstrap : MonoBehaviour
         if (weekReward != null) weekReward.Hide();
         var pauseMenu = Object.FindObjectOfType<PauseMenu>(true);
         if (pauseMenu != null) pauseMenu.Hide();
+        HideTimeSpeedPanel();
     }
 
     private static void HidePauseButtonInNonLevelScene()
     {
         var btn = GameObject.Find("PauseButton");
         if (btn != null) btn.SetActive(false);
+        HideTimeSpeedPanel();
+    }
+
+    private static void HideTimeSpeedPanel()
+    {
+        var panel = GameObject.Find("TimeSpeedPanel");
+        if (panel != null) panel.SetActive(false);
     }
 
     private static bool IsLevelScene()
@@ -110,6 +142,76 @@ public class GameUIRuntimeBootstrap : MonoBehaviour
         canvas.AddComponent<GraphicRaycaster>();
         Object.DontDestroyOnLoad(canvas);
         Debug.Log("[GameUIRuntimeBootstrap] Created GameCanvas");
+
+        CreateTimeSpeedPanel(canvas.transform);
+    }
+
+    private static void CreateTimeSpeedPanel(Transform parent)
+    {
+        const float buttonSize = 48f;
+        const float spacing = 6f;
+        const float margin = 8f;
+        const float pauseButtonSize = 64f;
+        float panelHeight = buttonSize * 3 + spacing * 2;
+        float startY = -margin - pauseButtonSize - spacing - panelHeight;
+
+        var panel = new GameObject("TimeSpeedPanel");
+        panel.transform.SetParent(parent, false);
+
+        var pr = panel.AddComponent<RectTransform>();
+        pr.anchorMin = new Vector2(1, 1);
+        pr.anchorMax = new Vector2(1, 1);
+        pr.pivot = new Vector2(1, 1);
+        pr.anchoredPosition = new Vector2(-margin, startY);
+        pr.sizeDelta = new Vector2(buttonSize, panelHeight);
+
+        var bg = panel.AddComponent<Image>();
+        bg.color = new Color(0.04f, 0.06f, 0.1f, 0.85f);
+        bg.raycastTarget = true;
+
+        var btn1x = CreateSpeedButton(panel.transform, "Speed1x", "1x", new Vector2(0, -buttonSize * 2 - spacing * 2), new Vector2(buttonSize, buttonSize));
+        var btn1_5x = CreateSpeedButton(panel.transform, "Speed1_5x", "1.5x", new Vector2(0, -buttonSize - spacing), new Vector2(buttonSize, buttonSize));
+        var btn2x = CreateSpeedButton(panel.transform, "Speed2x", "2x", new Vector2(0, 0), new Vector2(buttonSize, buttonSize));
+
+        var comp = panel.AddComponent<TimeSpeedPanel>();
+        comp.speed1xButton = btn1x;
+        comp.speed1_5xButton = btn1_5x;
+        comp.speed2xButton = btn2x;
+        comp.BindEvents();
+
+        Debug.Log("[GameUIRuntimeBootstrap] Created TimeSpeedPanel");
+    }
+
+    private static Button CreateSpeedButton(Transform parent, string name, string label, Vector2 pos, Vector2 size)
+    {
+        var go = new GameObject(name);
+        go.transform.SetParent(parent, false);
+
+        var r = go.AddComponent<RectTransform>();
+        r.anchorMin = new Vector2(0.5f, 1);
+        r.anchorMax = new Vector2(0.5f, 1);
+        r.pivot = new Vector2(0.5f, 1);
+        r.anchoredPosition = pos;
+        r.sizeDelta = size;
+
+        var img = go.AddComponent<Image>();
+        img.color = new Color(0.35f, 0.4f, 0.5f, 0.9f);
+        var btn = go.AddComponent<Button>();
+
+        var textGo = new GameObject("Text");
+        textGo.transform.SetParent(go.transform, false);
+        var textRt = textGo.AddComponent<RectTransform>();
+        textRt.anchorMin = Vector2.zero;
+        textRt.anchorMax = Vector2.one;
+        textRt.offsetMin = textRt.offsetMax = Vector2.zero;
+        var txt = textGo.AddComponent<Text>();
+        txt.text = label;
+        txt.font = GameUIFonts.Default;
+        txt.fontSize = 16;
+        txt.alignment = TextAnchor.MiddleCenter;
+        txt.color = Color.white;
+
+        return btn;
     }
 
     /// <summary>仅绑定暂停键点击事件，不创建。场景内对象由 Star Express/自动设置 Game UI 创建，可在编辑器中直接调整。</summary>
