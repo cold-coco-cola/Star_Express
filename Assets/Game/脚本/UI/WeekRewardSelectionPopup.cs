@@ -2,6 +2,9 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 /// <summary>
 /// 每周到时暂停游戏，弹出资源选择界面。
@@ -15,12 +18,8 @@ public class WeekRewardSelectionPopup : BasePanel
     public Text weekText;
     public Text hintText;
     public Button option1Button;
-    public Text option1Label;
-    public Text option1Desc;
     public Image option1Icon;
     public Button option2Button;
-    public Text option2Label;
-    public Text option2Desc;
     public Image option2Icon;
 
     private RewardOption[] _options = new RewardOption[2];
@@ -30,6 +29,9 @@ public class WeekRewardSelectionPopup : BasePanel
 
     private void Start()
     {
+        ResolveIconRefsIfMissing();
+        RemoveDescAndNameText(option1Button);
+        RemoveDescAndNameText(option2Button);
         if (option1Button != null)
         {
             if (option1Button.GetComponent<GameplayButtonHoverSound>() == null)
@@ -45,6 +47,40 @@ public class WeekRewardSelectionPopup : BasePanel
         OnSelectionComplete += OnSelectionCompleteHandler;
         var gm = GameManager.Instance;
         if (gm != null) gm.OnWeekRewardSelectionRequired += ShowForWeek;
+    }
+
+    /// <summary>若场景引用丢失，从 Option 下 Find("Icon") 恢复 option1Icon/option2Icon。</summary>
+    private void ResolveIconRefsIfMissing()
+    {
+        if (option1Icon == null && option1Button != null)
+        {
+            var icon = option1Button.transform.Find("Icon");
+            if (icon != null) option1Icon = icon.GetComponent<Image>();
+        }
+        if (option2Icon == null && option2Button != null)
+        {
+            var icon = option2Button.transform.Find("Icon");
+            if (icon != null) option2Icon = icon.GetComponent<Image>();
+        }
+    }
+
+    private static void RemoveDescAndNameText(Button optionButton)
+    {
+        if (optionButton == null) return;
+        var t = optionButton.transform;
+        for (int i = t.childCount - 1; i >= 0; i--)
+        {
+            var child = t.GetChild(i);
+            if (child.name == "DescText" || child.name == "NameText")
+            {
+#if UNITY_EDITOR
+                if (!Application.isPlaying)
+                    UnityEngine.Object.DestroyImmediate(child.gameObject);
+                else
+#endif
+                    UnityEngine.Object.Destroy(child.gameObject);
+            }
+        }
     }
 
     protected override void OnDestroy()
@@ -96,27 +132,58 @@ public class WeekRewardSelectionPopup : BasePanel
         Hide();
     }
 
-    /// <summary>根据选项索引设置名称、描述、图标。图标通过 VisualConfig.rewardIcons[(int)RewardOption] 获取。</summary>
+    /// <summary>根据选项索引设置图标，VisualConfig.rewardIcons 顺序为 Carriage/StarTunnel/NewLine，对应 rocket/Star_Tunnel/track。</summary>
     private void SetOptionLabel(int index)
     {
         if (index >= _options.Length) return;
         var opt = _options[index];
-        string name = opt == RewardOption.Carriage ? "客舱" : opt == RewardOption.StarTunnel ? "星隧" : "新线路";
-        string desc = opt == RewardOption.Carriage ? "飞船容量 +2" : opt == RewardOption.StarTunnel ? "快速传送通道" : "解锁新线路";
-
-        var label = index == 0 ? option1Label : option2Label;
-        var descText = index == 0 ? option1Desc : option2Desc;
         var iconImg = index == 0 ? option1Icon : option2Icon;
 
-        if (label != null) label.text = name;
-        if (descText != null) descText.text = desc;
-        if (iconImg != null)
-        {
-            var vc = GameManager.Instance != null ? GameManager.Instance.visualConfig : null;
-            if (vc != null && vc.rewardIcons != null && (int)opt < vc.rewardIcons.Length && vc.rewardIcons[(int)opt] != null)
-                iconImg.sprite = vc.rewardIcons[(int)opt];
-            else
-                iconImg.sprite = null;
-        }
+        if (iconImg == null) return;
+
+        var rt = iconImg.rectTransform;
+        rt.anchorMin = Vector2.zero;
+        rt.anchorMax = Vector2.one;
+        rt.offsetMin = Vector2.zero;
+        rt.offsetMax = Vector2.zero;
+        iconImg.raycastTarget = false;
+        iconImg.color = Color.white;
+        iconImg.type = Image.Type.Simple;
+        iconImg.preserveAspect = false;
+        iconImg.enabled = true;
+        if (iconImg.gameObject != null)
+            iconImg.gameObject.SetActive(true);
+        iconImg.transform.SetAsFirstSibling();
+
+        Sprite sprite = GetRewardSprite(opt);
+        iconImg.sprite = sprite;
+        if (sprite == null)
+            iconImg.color = new Color(0.3f, 0.35f, 0.45f, 0.98f);
+    }
+
+    /// <summary>优先从 VisualConfig.rewardIcons 取图，为空时在编辑器用 AssetDatabase 从 Obtaining_Props 加载，或从 Resources 加载。</summary>
+    private static Sprite GetRewardSprite(RewardOption opt)
+    {
+        var gm = GameManager.Instance;
+        var vc = gm != null ? gm.visualConfig : null;
+        if (vc != null && vc.rewardIcons != null && (int)opt < vc.rewardIcons.Length && vc.rewardIcons[(int)opt] != null)
+            return vc.rewardIcons[(int)opt];
+
+#if UNITY_EDITOR
+        if (vc == null)
+            vc = AssetDatabase.LoadAssetAtPath<VisualConfig>("Assets/Game/配置/VisualConfig.asset");
+        if (vc != null && vc.rewardIcons != null && (int)opt < vc.rewardIcons.Length && vc.rewardIcons[(int)opt] != null)
+            return vc.rewardIcons[(int)opt];
+        string name = opt == RewardOption.Carriage ? "rocket" : opt == RewardOption.StarTunnel ? "Star_Tunnel" : "track";
+            string path = "Assets/Game/美术/Photos/Obtaining_Props/" + name + ".jpg";
+        UnityEngine.Object[] assets = AssetDatabase.LoadAllAssetsAtPath(path);
+        if (assets != null)
+            foreach (var a in assets)
+                if (a is Sprite s) return s;
+#endif
+        string resName = opt == RewardOption.Carriage ? "rocket" : opt == RewardOption.StarTunnel ? "Star_Tunnel" : "track";
+        var fromRes = Resources.Load<Sprite>("Obtaining_Props/" + resName);
+        if (fromRes != null) return fromRes;
+        return null;
     }
 }

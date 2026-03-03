@@ -323,19 +323,15 @@ public static class GameplayUISetup
         var hintT = CreateText(panel.transform, "HintText", "选择 1 项奖励", new Vector2(0, layout.y * 0.22f), new Vector2(layout.x - 40, 24), 18);
 
         float optY = -20;
-        var (opt1, icon1, desc1, name1) = CreateRewardOptionCard(panel.transform, "Option1", new Vector2(-btnSize.x * 0.5f - gap * 0.5f, optY), btnSize);
-        var (opt2, icon2, desc2, name2) = CreateRewardOptionCard(panel.transform, "Option2", new Vector2(btnSize.x * 0.5f + gap * 0.5f, optY), btnSize);
+        var (opt1, icon1) = CreateRewardOptionCard(panel.transform, "Option1", new Vector2(-btnSize.x * 0.5f - gap * 0.5f, optY), btnSize);
+        var (opt2, icon2) = CreateRewardOptionCard(panel.transform, "Option2", new Vector2(btnSize.x * 0.5f + gap * 0.5f, optY), btnSize);
 
         var comp = panel.AddComponent<WeekRewardSelectionPopup>();
         comp.weekText = weekT;
         comp.hintText = hintT;
         comp.option1Button = opt1;
-        comp.option1Label = name1;
-        comp.option1Desc = desc1;
         comp.option1Icon = icon1;
         comp.option2Button = opt2;
-        comp.option2Label = name2;
-        comp.option2Desc = desc2;
         comp.option2Icon = icon2;
 
         AddButtonClickAnim(opt1, opt2);
@@ -575,7 +571,7 @@ public static class GameplayUISetup
         return t;
     }
 
-    private static (Button button, Image iconImage, Text descText, Text nameText) CreateRewardOptionCard(Transform parent, string name, Vector2 pos, Vector2 size)
+    private static (Button button, Image iconImage) CreateRewardOptionCard(Transform parent, string name, Vector2 pos, Vector2 size)
     {
         var go = new GameObject(name);
         go.transform.SetParent(parent, false);
@@ -594,43 +590,15 @@ public static class GameplayUISetup
         var iconGo = new GameObject("Icon");
         iconGo.transform.SetParent(go.transform, false);
         var iconRt = iconGo.AddComponent<RectTransform>();
-        iconRt.anchorMin = new Vector2(0, 0.35f);
-        iconRt.anchorMax = new Vector2(1, 1);
-        iconRt.offsetMin = new Vector2(8, 8);
-        iconRt.offsetMax = new Vector2(-8, -8);
+        iconRt.anchorMin = Vector2.zero;
+        iconRt.anchorMax = Vector2.one;
+        iconRt.offsetMin = Vector2.zero;
+        iconRt.offsetMax = Vector2.zero;
         var iconImg = iconGo.AddComponent<Image>();
-        iconImg.color = new Color(0.3f, 0.35f, 0.45f);
+        iconImg.color = Color.white;
         iconImg.raycastTarget = false;
 
-        var descGo = new GameObject("DescText");
-        descGo.transform.SetParent(go.transform, false);
-        var descRt = descGo.AddComponent<RectTransform>();
-        descRt.anchorMin = new Vector2(0, 0.2f);
-        descRt.anchorMax = new Vector2(1, 0.35f);
-        descRt.offsetMin = new Vector2(6, 2);
-        descRt.offsetMax = new Vector2(-6, -2);
-        var descTxt = descGo.AddComponent<Text>();
-        descTxt.text = "";
-        descTxt.font = GameUIFonts.Default;
-        descTxt.fontSize = 12;
-        descTxt.alignment = TextAnchor.MiddleCenter;
-        descTxt.color = new Color(0.85f, 0.88f, 0.92f);
-
-        var nameGo = new GameObject("NameText");
-        nameGo.transform.SetParent(go.transform, false);
-        var nameRt = nameGo.AddComponent<RectTransform>();
-        nameRt.anchorMin = Vector2.zero;
-        nameRt.anchorMax = new Vector2(1, 0.2f);
-        nameRt.offsetMin = new Vector2(6, 2);
-        nameRt.offsetMax = new Vector2(-6, -2);
-        var nameTxt = nameGo.AddComponent<Text>();
-        nameTxt.text = "";
-        nameTxt.font = GameUIFonts.Default;
-        nameTxt.fontSize = 16;
-        nameTxt.alignment = TextAnchor.MiddleCenter;
-        nameTxt.color = Color.white;
-
-        return (btn, iconImg, descTxt, nameTxt);
+        return (btn, iconImg);
     }
 
     private static void AddButtonClickAnim(params Button[] buttons)
