@@ -1,0 +1,32 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp", "Assembly-CSharp.csproj", "{DFF4972B-F8BB-68B6-3AD1-7F62C4885494}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp-Editor", "Assembly-CSharp-Editor.csproj", "{677E4148-F443-8928-7C92-F7EB0410ECCB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Unity.UOS.Encrypt", "Unity.UOS.Encrypt.csproj", "{E96BDB98-2BA7-DEA4-BC09-A91003A02077}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{DFF4972B-F8BB-68B6-3AD1-7F62C4885494}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DFF4972B-F8BB-68B6-3AD1-7F62C4885494}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DFF4972B-F8BB-68B6-3AD1-7F62C4885494}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DFF4972B-F8BB-68B6-3AD1-7F62C4885494}.Release|Any CPU.Build.0 = Release|Any CPU
+		{677E4148-F443-8928-7C92-F7EB0410ECCB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{677E4148-F443-8928-7C92-F7EB0410ECCB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{677E4148-F443-8928-7C92-F7EB0410ECCB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{677E4148-F443-8928-7C92-F7EB0410ECCB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E96BDB98-2BA7-DEA4-BC09-A91003A02077}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E96BDB98-2BA7-DEA4-BC09-A91003A02077}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E96BDB98-2BA7-DEA4-BC09-A91003A02077}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E96BDB98-2BA7-DEA4-BC09-A91003A02077}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
