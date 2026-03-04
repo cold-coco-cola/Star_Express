@@ -59,6 +59,7 @@ public class GameManager : MonoBehaviour
     private Dictionary<StationBehaviour, float> _deathCrowdTimers = new Dictionary<StationBehaviour, float>();
     private bool _waitingWeekRewardSelection;
     private int _pendingWeekForReward;
+    private float _savedTimeScale = 1f;
     private bool _isTutorialPaused;
 
     public int CurrentWeek => currentWeek;
@@ -134,7 +135,8 @@ public class GameManager : MonoBehaviour
         IsPausedByUser = false;
         _isTutorialPaused = false;
         _levelLoaded = false;
-        Time.timeScale = 1f;
+        _savedTimeScale = 1f;
+        Time.timeScale = _savedTimeScale;
 
         if (levelConfig == null)
         {
@@ -275,7 +277,7 @@ public class GameManager : MonoBehaviour
             ApplyRewardOption(lm, chosen);
         }
         _waitingWeekRewardSelection = false;
-        Time.timeScale = 1f;
+        Time.timeScale = _savedTimeScale;
         OnWeekReward?.Invoke(_pendingWeekForReward, ResourceType.Ship);
         string optName = chosen == WeekRewardSelectionPopup.RewardOption.Carriage ? "客舱" :
             chosen == WeekRewardSelectionPopup.RewardOption.StarTunnel ? "星隧" : "新线路";
@@ -293,8 +295,28 @@ public class GameManager : MonoBehaviour
     {
         if (_waitingWeekRewardSelection) return;
         IsPausedByUser = paused;
-        Time.timeScale = paused ? 0f : 1f;
+        if (paused)
+        {
+            _savedTimeScale = Time.timeScale;
+            Time.timeScale = 0f;
+        }
+        else
+        {
+            Time.timeScale = _savedTimeScale;
+        }
     }
+
+    /// <summary>设置游戏速度（由 TimeSpeedPanel 调用）。</summary>
+    public void SetGameSpeed(float speed)
+    {
+        _savedTimeScale = speed;
+        if (!IsPausedByUser && !IsPausedForWeekReward && !isGameOver)
+        {
+            Time.timeScale = speed;
+        }
+    }
+
+    public float SavedTimeScale => _savedTimeScale;
 
     /// <summary>教程暂停：仅暂停系统逻辑，不修改 Time.timeScale。</summary>
     public void SetTutorialPaused(bool paused)

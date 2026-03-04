@@ -57,5 +57,6 @@
         "Temp/": true
     },
     "dotnet.defaultSolution": "Star_Express.sln",
-    "git.ignoreLimitWarning": true
+    "git.ignoreLimitWarning": true,
+    "dotnet.preferCSharpExtension": true
 }

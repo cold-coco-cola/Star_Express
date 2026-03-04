@@ -14,6 +14,7 @@ public static class GameplayUISetup
     {
         EnsureGameCanvas();
         EnsurePauseButton();
+        EnsureTimeSpeedPanel();
         EnsurePauseMenu();
         EnsureGameOverPopup();
         EnsureWeekRewardSelectionPopup();
@@ -599,6 +600,98 @@ public static class GameplayUISetup
         iconImg.raycastTarget = false;
 
         return (btn, iconImg);
+    }
+
+    public static void EnsureTimeSpeedPanel()
+    {
+        var canvas = EnsureGameCanvas();
+        if (canvas == null) return;
+        if (EnsureTimeSpeedPanelUnder(canvas.transform))
+        {
+            Selection.activeGameObject = GameObject.Find("TimeSpeedPanel");
+            Debug.Log("[GameplayUISetup] Created TimeSpeedPanel");
+            return;
+        }
+        var existing = GameObject.Find("TimeSpeedPanel");
+        if (existing != null) Selection.activeGameObject = existing;
+    }
+
+    public static bool EnsureTimeSpeedPanelUnder(Transform parent)
+    {
+        if (parent.Find("TimeSpeedPanel") != null) return false;
+
+        const float buttonSize = 48f;
+        const float spacing = 6f;
+        const float margin = 8f;
+        const float pauseButtonSize = 64f;
+        float panelHeight = buttonSize * 3 + spacing * 2;
+        float startY = -margin - pauseButtonSize - spacing - panelHeight;
+
+        var panel = new GameObject("TimeSpeedPanel");
+        panel.transform.SetParent(parent, false);
+        panel.transform.SetAsLastSibling();
+        Undo.RegisterCreatedObjectUndo(panel, "Create TimeSpeedPanel");
+
+        var pr = panel.AddComponent<RectTransform>();
+        pr.anchorMin = new Vector2(1, 1);
+        pr.anchorMax = new Vector2(1, 1);
+        pr.pivot = new Vector2(1, 1);
+        pr.anchoredPosition = new Vector2(-margin, startY);
+        pr.sizeDelta = new Vector2(buttonSize, panelHeight);
+
+        var bg = panel.AddComponent<Image>();
+        bg.color = new Color(0.04f, 0.06f, 0.1f, 0.85f);
+        bg.raycastTarget = true;
+
+        var btn1x = CreateSpeedButton(panel.transform, "Speed1x", "1x", new Vector2(0, -buttonSize * 2 - spacing * 2), new Vector2(buttonSize, buttonSize));
+        var btn1_5x = CreateSpeedButton(panel.transform, "Speed1_5x", "1.5x", new Vector2(0, -buttonSize - spacing), new Vector2(buttonSize, buttonSize));
+        var btn2x = CreateSpeedButton(panel.transform, "Speed2x", "2x", new Vector2(0, 0), new Vector2(buttonSize, buttonSize));
+
+        var comp = panel.AddComponent<TimeSpeedPanel>();
+        comp.speed1xButton = btn1x;
+        comp.speed1_5xButton = btn1_5x;
+        comp.speed2xButton = btn2x;
+        comp.BindEvents();
+
+        AddButtonClickAnim(btn1x, btn1_5x, btn2x);
+        btn1x.gameObject.AddComponent<GameplayButtonHoverSound>();
+        btn1_5x.gameObject.AddComponent<GameplayButtonHoverSound>();
+        btn2x.gameObject.AddComponent<GameplayButtonHoverSound>();
+
+        return true;
+    }
+
+    private static Button CreateSpeedButton(Transform parent, string name, string label, Vector2 pos, Vector2 size)
+    {
+        var go = new GameObject(name);
+        go.transform.SetParent(parent, false);
+        Undo.RegisterCreatedObjectUndo(go, "Create Speed Button");
+
+        var r = go.AddComponent<RectTransform>();
+        r.anchorMin = new Vector2(0.5f, 1);
+        r.anchorMax = new Vector2(0.5f, 1);
+        r.pivot = new Vector2(0.5f, 1);
+        r.anchoredPosition = pos;
+        r.sizeDelta = size;
+
+        var img = go.AddComponent<Image>();
+        img.color = new Color(0.35f, 0.4f, 0.5f, 0.9f);
+        var btn = go.AddComponent<Button>();
+
+        var textGo = new GameObject("Text");
+        textGo.transform.SetParent(go.transform, false);
+        var textRt = textGo.AddComponent<RectTransform>();
+        textRt.anchorMin = Vector2.zero;
+        textRt.anchorMax = Vector2.one;
+        textRt.offsetMin = textRt.offsetMax = Vector2.zero;
+        var txt = textGo.AddComponent<Text>();
+        txt.text = label;
+        txt.font = GameUIFonts.Default;
+        txt.fontSize = 16;
+        txt.alignment = TextAnchor.MiddleCenter;
+        txt.color = Color.white;
+
+        return btn;
     }
 
     private static void AddButtonClickAnim(params Button[] buttons)
