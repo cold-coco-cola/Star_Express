@@ -690,9 +690,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buttonText: {fileID: 121840183}
   highlightIcon: {fileID: 0}
-  hoverSprite: {fileID: 21300000, guid: 5e094b420a119bf449dde423c9689dc1, type: 3}
   hoverBgColor: {r: 0.8943129, g: 0.8943129, b: 0.9339623, a: 0.93333334}
   normalBgColor: {r: 1, g: 1, b: 1, a: 1}
+  hoverSprite: {fileID: 21300000, guid: 5e094b420a119bf449dde423c9689dc1, type: 3}
   highlightColor: {r: 0.8862745, g: 0.7490196, b: 0.29803923, a: 1}
   scaleMultiplier: 1.05
   transitionDuration: 0.15
@@ -1874,9 +1874,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buttonText: {fileID: 1676493877}
   highlightIcon: {fileID: 0}
-  hoverSprite: {fileID: 21300000, guid: 5e094b420a119bf449dde423c9689dc1, type: 3}
   hoverBgColor: {r: 0.8943129, g: 0.8943129, b: 0.9339623, a: 0.93333334}
   normalBgColor: {r: 1, g: 1, b: 1, a: 1}
+  hoverSprite: {fileID: 21300000, guid: 5e094b420a119bf449dde423c9689dc1, type: 3}
   highlightColor: {r: 0.8862745, g: 0.7490196, b: 0.29803923, a: 1}
   scaleMultiplier: 1.05
   transitionDuration: 0.15
@@ -5308,9 +5308,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buttonText: {fileID: 2018734587}
   highlightIcon: {fileID: 0}
-  hoverSprite: {fileID: 21300000, guid: 5e094b420a119bf449dde423c9689dc1, type: 3}
   hoverBgColor: {r: 0.8943129, g: 0.8943129, b: 0.9339623, a: 0.93333334}
   normalBgColor: {r: 1, g: 1, b: 1, a: 1}
+  hoverSprite: {fileID: 21300000, guid: 5e094b420a119bf449dde423c9689dc1, type: 3}
   highlightColor: {r: 0.8862745, g: 0.7490196, b: 0.29803923, a: 1}
   scaleMultiplier: 1.05
   transitionDuration: 0.15
@@ -6053,9 +6053,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buttonText: {fileID: 1700797521}
   highlightIcon: {fileID: 0}
-  hoverSprite: {fileID: 21300000, guid: 5e094b420a119bf449dde423c9689dc1, type: 3}
   hoverBgColor: {r: 0.8943129, g: 0.8943129, b: 0.9339623, a: 0.93333334}
   normalBgColor: {r: 1, g: 1, b: 1, a: 1}
+  hoverSprite: {fileID: 21300000, guid: 5e094b420a119bf449dde423c9689dc1, type: 3}
   highlightColor: {r: 0.8862745, g: 0.7490196, b: 0.29803923, a: 1}
   scaleMultiplier: 1.05
   transitionDuration: 0.15

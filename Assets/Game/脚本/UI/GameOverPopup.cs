@@ -9,6 +9,7 @@ using UnityEngine.SceneManagement;
 public class GameOverPopup : BasePanel
 {
     [Header("绑定")]
+    public Text titleText;
     public Text scoreText;
     public Text reasonText;
     public Button retryButton;
@@ -33,6 +34,7 @@ public class GameOverPopup : BasePanel
     /// <summary>由 GameplayUIController 在相机聚焦动画完成后调用，确保得分与失败原因正确显示。</summary>
     public void ShowWithScore(int score, StationBehaviour failedStation)
     {
+        if (titleText != null) titleText.text = "调度失败";
         if (scoreText != null) scoreText.text = "得分: " + score;
         if (reasonText != null)
             reasonText.text = failedStation != null ? $"站点「{failedStation.displayName}」拥挤超阈值" : "游戏结束";

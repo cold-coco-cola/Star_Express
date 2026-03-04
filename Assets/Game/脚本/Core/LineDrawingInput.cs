@@ -243,6 +243,12 @@ public class LineDrawingInput : MonoBehaviour
         StationBehaviour stationB = _colorPickPanel != null ? _colorPickPanel.LastStationB : null;
         if (stationB == null) { ClearHighlightAndReset(); return; }
         bool ok = lineManager.TryCreateOrExtendLine(_selectedA, stationB, color);
+        if (ok)
+        {
+            var tutorial = FindObjectOfType<TutorialManager>(true);
+            if (tutorial != null)
+                tutorial.OnLineCreated();
+        }
         if (!ok && debugLog) Debug.Log("[连线] 无法建线或延伸");
         ClearHighlightAndReset();
     }

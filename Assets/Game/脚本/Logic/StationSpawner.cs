@@ -40,6 +40,7 @@ public class StationSpawner : MonoBehaviour
     {
         var gm = GameManager.Instance;
         if (gm == null || gm.IsGameOver) return;
+        if (gm.IsTutorialPaused) return;
         var config = gm.levelConfig;
         if (config == null || config.stations == null || config.stations.Count == 0) return;
 

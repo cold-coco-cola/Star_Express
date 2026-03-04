@@ -69,6 +69,12 @@ public class GameUIRuntimeBootstrap : MonoBehaviour
         if (weekReward != null) weekReward.Hide();
         var pauseMenu = Object.FindObjectOfType<PauseMenu>(true);
         if (pauseMenu != null) pauseMenu.Hide();
+        var story = Object.FindObjectOfType<StoryPanel>(true);
+        if (story != null) story.Hide();
+        var tutorialStep = Object.FindObjectOfType<TutorialStepPanel>(true);
+        if (tutorialStep != null) tutorialStep.Hide();
+        var guide = Object.FindObjectOfType<OperationGuidePanel>(true);
+        if (guide != null) guide.Hide();
     }
 
     private static void HideAllGameplayPopups()
@@ -79,6 +85,12 @@ public class GameUIRuntimeBootstrap : MonoBehaviour
         if (weekReward != null) weekReward.Hide();
         var pauseMenu = Object.FindObjectOfType<PauseMenu>(true);
         if (pauseMenu != null) pauseMenu.Hide();
+        var story = Object.FindObjectOfType<StoryPanel>(true);
+        if (story != null) story.Hide();
+        var tutorialStep = Object.FindObjectOfType<TutorialStepPanel>(true);
+        if (tutorialStep != null) tutorialStep.Hide();
+        var guide = Object.FindObjectOfType<OperationGuidePanel>(true);
+        if (guide != null) guide.Hide();
     }
 
     private static void HidePauseButtonInNonLevelScene()

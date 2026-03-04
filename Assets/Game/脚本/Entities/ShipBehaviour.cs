@@ -380,6 +380,7 @@ public class ShipBehaviour : MonoBehaviour
     private void Update()
     {
         if (GameManager.Instance != null && GameManager.Instance.IsGameOver) return;
+        if (GameManager.Instance != null && GameManager.Instance.IsTutorialPaused) return;
         if (line == null || line.stationSequence == null || line.stationSequence.Count < 2) return;
 
         _cachedPrimaryRenderer = _cachedPrimaryRenderer != null ? _cachedPrimaryRenderer : GetComponentInChildren<SpriteRenderer>(true);

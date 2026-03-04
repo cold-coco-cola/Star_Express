@@ -59,10 +59,12 @@ public class GameManager : MonoBehaviour
     private Dictionary<StationBehaviour, float> _deathCrowdTimers = new Dictionary<StationBehaviour, float>();
     private bool _waitingWeekRewardSelection;
     private int _pendingWeekForReward;
+    private bool _isTutorialPaused;
 
     public int CurrentWeek => currentWeek;
     public bool IsPausedForWeekReward => _waitingWeekRewardSelection;
     public bool IsPausedByUser { get; private set; }
+    public bool IsTutorialPaused => _isTutorialPaused;
     public int Score => score;
     public bool IsGameOver => isGameOver;
     public float WeekDurationSeconds => gameBalance != null ? gameBalance.weekDurationSeconds : 90f;
@@ -95,6 +97,7 @@ public class GameManager : MonoBehaviour
         EnsureComponent<CarriagePlacementInput>();
         EnsureComponent<StationSpawner>();
         EnsureComponent<GameplayAudio>();
+        EnsureComponent<TutorialManager>();
         // PRD §3.1：周 0 持续 60 秒后首次发放，开局不发放。不在此处添加飞船。
     }
 
@@ -129,6 +132,7 @@ public class GameManager : MonoBehaviour
         score = 0;
         isGameOver = false;
         IsPausedByUser = false;
+        _isTutorialPaused = false;
         _levelLoaded = false;
         Time.timeScale = 1f;
 
@@ -195,6 +199,7 @@ public class GameManager : MonoBehaviour
         if (isGameOver) return;
         if (_waitingWeekRewardSelection) return;
         if (IsPausedByUser) return;
+        if (_isTutorialPaused) return;
 
         // PRD §7.3 步骤 1：周计时 — 始终运行，不依赖关卡是否加载
         float duration = WeekDurationSeconds;
@@ -289,6 +294,12 @@ public class GameManager : MonoBehaviour
         if (_waitingWeekRewardSelection) return;
         IsPausedByUser = paused;
         Time.timeScale = paused ? 0f : 1f;
+    }
+
+    /// <summary>教程暂停：仅暂停系统逻辑，不修改 Time.timeScale。</summary>
+    public void SetTutorialPaused(bool paused)
+    {
+        _isTutorialPaused = paused;
     }
 
     private static void ApplyRewardOption(LineManager lm, WeekRewardSelectionPopup.RewardOption opt)

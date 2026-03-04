@@ -90,6 +90,7 @@ public class StationBehaviour : MonoBehaviour
 
         if (!isUnlocked) return;
         if (GameManager.Instance == null) return;
+        if (GameManager.Instance.IsTutorialPaused) return;
 
         float interval = GetSpawnInterval();
         if (!_spawnTimerInitialized)
