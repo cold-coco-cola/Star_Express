@@ -17,6 +17,7 @@ public class ShipBehaviour : MonoBehaviour
 
     [Header("载客")]
     public int capacity = 4;
+    public int carriageUpgradeCount;
     public List<Passenger> passengers = new List<Passenger>();
 
     [Header("运行时状态")]

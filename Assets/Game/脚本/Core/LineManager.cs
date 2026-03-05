@@ -165,11 +165,26 @@ public class LineManager : MonoBehaviour, ILineManager
             }
             _starTunnelStock -= starTunnelCost;
 
-            if (aIsFirst) { seq.Insert(0, seq[lastIdx]); }
-            else if (aIsLast) { seq.Add(seq[firstIdx]); }
-            else if (bIsFirst) { seq.Insert(0, seq[lastIdx]); }
-            else if (bIsLast) { seq.Add(seq[firstIdx]); }
-            existingOfColor.segmentStarTunnelCosts.Add(starTunnelCost);
+            if (aIsFirst)
+            {
+                seq.Add(seq[firstIdx]);
+                existingOfColor.segmentStarTunnelCosts.Add(starTunnelCost);
+            }
+            else if (aIsLast)
+            {
+                seq.Add(seq[firstIdx]);
+                existingOfColor.segmentStarTunnelCosts.Add(starTunnelCost);
+            }
+            else if (bIsFirst)
+            {
+                seq.Add(seq[firstIdx]);
+                existingOfColor.segmentStarTunnelCosts.Add(starTunnelCost);
+            }
+            else if (bIsLast)
+            {
+                seq.Add(seq[firstIdx]);
+                existingOfColor.segmentStarTunnelCosts.Add(starTunnelCost);
+            }
             RefreshAllLinesSharingSegmentsWith(existingOfColor);
             return true;
         }
@@ -418,6 +433,10 @@ public class LineManager : MonoBehaviour, ILineManager
         if (line.segmentStarTunnelCosts != null && segmentIndex >= 0 && segmentIndex < line.segmentStarTunnelCosts.Count)
         {
             costToReturn = line.segmentStarTunnelCosts[segmentIndex];
+        }
+
+        if (costToReturn > 0)
+        {
             _starTunnelStock += costToReturn;
         }
 
@@ -480,23 +499,38 @@ public class LineManager : MonoBehaviour, ILineManager
         {
             costToReturn = line.segmentStarTunnelCosts[segmentIndex];
             _starTunnelStock += costToReturn;
-            line.segmentStarTunnelCosts.RemoveAt(segmentIndex);
         }
 
         seq.RemoveAt(seq.Count - 1);
 
         var newSeq = new List<StationBehaviour>();
+        var newCosts = new List<int>();
+
         for (int i = segmentIndex; i >= 0; i--)
         {
             newSeq.Add(seq[i]);
+            if (i > 0 && line.segmentStarTunnelCosts != null && i - 1 < line.segmentStarTunnelCosts.Count)
+            {
+                newCosts.Add(line.segmentStarTunnelCosts[i - 1]);
+            }
         }
         for (int i = seq.Count - 1; i > segmentIndex; i--)
         {
             newSeq.Add(seq[i]);
+            if (line.segmentStarTunnelCosts != null && i < line.segmentStarTunnelCosts.Count)
+            {
+                newCosts.Add(line.segmentStarTunnelCosts[i]);
+            }
         }
 
         seq.Clear();
         seq.AddRange(newSeq);
+
+        if (line.segmentStarTunnelCosts != null)
+        {
+            line.segmentStarTunnelCosts.Clear();
+            line.segmentStarTunnelCosts.AddRange(newCosts);
+        }
 
         StationBehaviour keepStation = seq.Count > 0 ? seq[0] : null;
 
@@ -556,6 +590,15 @@ public class LineManager : MonoBehaviour, ILineManager
         int shipCount = line.ships.Count;
         if (shipCount > 0)
             _shipStock += shipCount;
+
+        int totalCarriageUpgrades = 0;
+        foreach (var ship in line.ships)
+        {
+            if (ship != null)
+                totalCarriageUpgrades += ship.carriageUpgradeCount;
+        }
+        if (totalCarriageUpgrades > 0)
+            _carriageStock += totalCarriageUpgrades;
 
         if (line.segmentStarTunnelCosts != null && line.segmentStarTunnelCosts.Count > 0)
         {
@@ -695,6 +738,7 @@ public class LineManager : MonoBehaviour, ILineManager
         var balance = GameManager.Instance != null ? GameManager.Instance.gameBalance : null;
         int increment = balance != null ? balance.carriageCapacityIncrement : 2;
         ship.capacity += increment;
+        ship.carriageUpgradeCount++;
         _carriageStock--;
         return true;
     }

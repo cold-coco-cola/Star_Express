@@ -95,7 +95,7 @@ public class GameHUD : BasePanel
         float remaining = gm.WeekTimerRemaining;
         int m = (int)(remaining / 60);
         int s = (int)(remaining % 60);
-        weekCountdownText.text = $"下周: {m}:{s:D2}";
+        weekCountdownText.text = $"下年: {m}:{s:D2}";
     }
 
     private static Text FindChildText(Transform root, string name)
