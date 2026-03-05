@@ -234,15 +234,61 @@ public class LineManager : MonoBehaviour, ILineManager
         if (seq == null || segmentIndex < 0 || segmentIndex + 1 >= seq.Count) return;
         insertProgress = Mathf.Clamp01(insertProgress);
 
+        StationBehaviour stationA = seq[segmentIndex];
+        StationBehaviour stationB = seq[segmentIndex + 1];
+
+        int costAToNew = 0;
+        int costNewToB = 0;
+
+        if (HasAnyCrossing(stationA.transform.position, newStation.transform.position))
+        {
+            costAToNew = 1;
+        }
+        if (HasAnyCrossing(newStation.transform.position, stationB.transform.position))
+        {
+            costNewToB = 1;
+        }
+
+        int totalNewCost = costAToNew + costNewToB;
+        int oldCost = 0;
+        if (line.segmentStarTunnelCosts != null && segmentIndex < line.segmentStarTunnelCosts.Count)
+        {
+            oldCost = line.segmentStarTunnelCosts[segmentIndex];
+        }
+
+        int costDifference = totalNewCost - oldCost;
+        if (costDifference > 0)
+        {
+            if (_starTunnelStock < costDifference)
+            {
+                NotifyStarTunnelInsufficient();
+                return;
+            }
+            _starTunnelStock -= costDifference;
+        }
+        else if (costDifference < 0)
+        {
+            _starTunnelStock += (-costDifference);
+        }
+
         seq.Insert(segmentIndex + 1, newStation);
 
         if (line.segmentStarTunnelCosts != null && segmentIndex < line.segmentStarTunnelCosts.Count)
         {
-            int cost = line.segmentStarTunnelCosts[segmentIndex];
-            int first = cost / 2;
-            int second = cost - first;
-            line.segmentStarTunnelCosts[segmentIndex] = first;
-            line.segmentStarTunnelCosts.Insert(segmentIndex + 1, second);
+            line.segmentStarTunnelCosts[segmentIndex] = costAToNew;
+            line.segmentStarTunnelCosts.Insert(segmentIndex + 1, costNewToB);
+        }
+        else
+        {
+            if (line.segmentStarTunnelCosts == null)
+                line.segmentStarTunnelCosts = new List<int>();
+            while (line.segmentStarTunnelCosts.Count < segmentIndex)
+                line.segmentStarTunnelCosts.Add(0);
+            if (line.segmentStarTunnelCosts.Count > segmentIndex)
+                line.segmentStarTunnelCosts[segmentIndex] = costAToNew;
+            else
+                line.segmentStarTunnelCosts.Add(costAToNew);
+            line.segmentStarTunnelCosts.Insert(segmentIndex + 1, costNewToB);
         }
 
         foreach (var ship in line.ships)

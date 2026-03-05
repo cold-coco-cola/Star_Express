@@ -624,7 +624,7 @@ public static class GameplayUISetup
         const float spacing = 6f;
         const float margin = 8f;
         const float pauseButtonSize = 64f;
-        float panelHeight = buttonSize * 3 + spacing * 2;
+        float panelHeight = buttonSize * 4 + spacing * 3;
         float startY = -margin - pauseButtonSize - spacing - panelHeight;
 
         var panel = new GameObject("TimeSpeedPanel");
@@ -643,17 +643,20 @@ public static class GameplayUISetup
         bg.color = new Color(0.04f, 0.06f, 0.1f, 0.85f);
         bg.raycastTarget = true;
 
+        var btn0x = CreateSpeedButton(panel.transform, "Speed0x", "⏸", new Vector2(0, -buttonSize * 3 - spacing * 3), new Vector2(buttonSize, buttonSize));
         var btn1x = CreateSpeedButton(panel.transform, "Speed1x", "1x", new Vector2(0, -buttonSize * 2 - spacing * 2), new Vector2(buttonSize, buttonSize));
         var btn1_5x = CreateSpeedButton(panel.transform, "Speed1_5x", "1.5x", new Vector2(0, -buttonSize - spacing), new Vector2(buttonSize, buttonSize));
         var btn2x = CreateSpeedButton(panel.transform, "Speed2x", "2x", new Vector2(0, 0), new Vector2(buttonSize, buttonSize));
 
         var comp = panel.AddComponent<TimeSpeedPanel>();
+        comp.speed0xButton = btn0x;
         comp.speed1xButton = btn1x;
         comp.speed1_5xButton = btn1_5x;
         comp.speed2xButton = btn2x;
         comp.BindEvents();
 
-        AddButtonClickAnim(btn1x, btn1_5x, btn2x);
+        AddButtonClickAnim(btn0x, btn1x, btn1_5x, btn2x);
+        btn0x.gameObject.AddComponent<GameplayButtonHoverSound>();
         btn1x.gameObject.AddComponent<GameplayButtonHoverSound>();
         btn1_5x.gameObject.AddComponent<GameplayButtonHoverSound>();
         btn2x.gameObject.AddComponent<GameplayButtonHoverSound>();

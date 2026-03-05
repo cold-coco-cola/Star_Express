@@ -37,3 +37,4 @@
 *.pdb.meta
 *.mdb.meta
 temp-extract/
+*.cs
