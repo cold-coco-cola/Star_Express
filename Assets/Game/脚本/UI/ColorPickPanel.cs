@@ -22,13 +22,45 @@ public class ColorPickPanel : BasePanel
     private StationBehaviour _stationB;
     private Action<LineColor> _onSelected;
     private Action _onCancel;
+    private int _frameShown = -1;
+    private bool _waitingForMouseRelease;
 
     public StationBehaviour LastStationB => _stationB;
+
+    private void Update()
+    {
+        if (_waitingForMouseRelease && Input.GetMouseButtonUp(0))
+        {
+            _waitingForMouseRelease = false;
+        }
+    }
 
     protected override void OnInit()
     {
         TryAutoBindButtons();
         BindButtonEvents();
+        BindBlockerClick();
+    }
+
+    private void BindBlockerClick()
+    {
+        if (panelRoot == null) return;
+        var blocker = panelRoot.transform.Find("blocker");
+        if (blocker != null)
+        {
+            var btn = blocker.GetComponent<Button>();
+            if (btn == null)
+            {
+                btn = blocker.gameObject.AddComponent<Button>();
+            }
+            btn.onClick.RemoveAllListeners();
+            btn.onClick.AddListener(() =>
+            {
+                if (_waitingForMouseRelease) return;
+                GameplayAudio.Instance?.PlayClick();
+                OnCancelClick();
+            });
+        }
     }
 
     /// <summary>打开选色面板并设置回调。仅显示已解锁的线路颜色。</summary>
@@ -39,6 +71,8 @@ public class ColorPickPanel : BasePanel
         _stationB = stationB;
         _onSelected = onSelected;
         _onCancel = onCancel;
+        _frameShown = Time.frameCount;
+        _waitingForMouseRelease = true;
         RefreshUnlockedVisibility();
         base.Show();
         if (panelRoot != null)
@@ -67,6 +101,7 @@ public class ColorPickPanel : BasePanel
 
     private void OnColor(LineColor color)
     {
+        if (_waitingForMouseRelease) return;
         Hide();
         _onSelected?.Invoke(color);
         _onSelected = null;
@@ -75,10 +110,21 @@ public class ColorPickPanel : BasePanel
 
     private void OnCancelClick()
     {
+        if (_waitingForMouseRelease) return;
         Hide();
         _onCancel?.Invoke();
         _onSelected = null;
         _onCancel = null;
+    }
+
+    public void HideAndClearCallbacks()
+    {
+        Hide();
+        _onCancel?.Invoke();
+        _onSelected = null;
+        _onCancel = null;
+        _stationA = null;
+        _stationB = null;
     }
 
     private void TryAutoBindButtons()

@@ -295,6 +295,17 @@ public class ShipBehaviour : MonoBehaviour
         return count;
     }
 
+    public List<Passenger> GetAllPassengers()
+    {
+        var all = new List<Passenger>(passengers);
+        foreach (var c in carriages)
+        {
+            if (c != null && c.passengers != null)
+                all.AddRange(c.passengers);
+        }
+        return all;
+    }
+
     /// <summary>船上乘客相对站点乘客等比缩小，不拉伸。抵消飞船 Y 压缩，停靠时向船尾方向偏移。</summary>
     public void RefreshPassengerPositionsOnShip()
     {

@@ -41,8 +41,10 @@ public static class PassengerTransportLogic
         var line = ship.line;
         if (line == null || line.stationSequence == null) return result;
 
+        var allPassengers = ship.GetAllPassengers();
+
         // 1. 卸客·目的地：精确匹配 targetStationId，避免同形状多站时卸错站
-        foreach (var p in ship.passengers)
+        foreach (var p in allPassengers)
         {
             if (p == null) continue;
             if (IsDestinationStation(station, p))
@@ -53,7 +55,7 @@ public static class PassengerTransportLogic
         var toTransferSet = new HashSet<Passenger>(result.ToUnloadDestination);
         if (allLines != null)
         {
-            foreach (var p in ship.passengers)
+            foreach (var p in allPassengers)
             {
                 if (p == null || toTransferSet.Contains(p)) continue;
                 if (ShouldTransfer(p, station, stationIdx, line, direction, allLines))
@@ -62,10 +64,11 @@ public static class PassengerTransportLogic
         }
 
         // 3. 载客：仅载目标在前进方向的乘客，避免反向运输
-        if (allLines != null && allLines.Count > 0 && ship.passengers.Count < ship.TotalCapacity)
+        int totalPassengerCount = ship.GetTotalPassengerCount();
+        if (allLines != null && allLines.Count > 0 && totalPassengerCount < ship.TotalCapacity)
         {
             var waiting = station.waitingPassengers;
-            int onboardAfterUnload = ship.passengers.Count - result.ToUnloadDestination.Count - result.ToTransfer.Count;
+            int onboardAfterUnload = totalPassengerCount - result.ToUnloadDestination.Count - result.ToTransfer.Count;
             for (int i = 0; i < waiting.Count && result.ToLoad.Count + onboardAfterUnload < ship.TotalCapacity; i++)
             {
                 var p = waiting[i];

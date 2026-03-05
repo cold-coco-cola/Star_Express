@@ -180,14 +180,16 @@ public class LineDrawingInput : MonoBehaviour
 
     private void HandleLeftClick(Vector2 mouseWorld, bool overUI)
     {
+        if (_colorPickPanel != null && _colorPickPanel.IsVisible)
+        {
+            return;
+        }
+
         var station = GetStationUnderMouse();
         if (debugLog)
             Debug.Log("[连线输入] 左键: overUI=" + overUI + " state=" + _state + " editing=" + (_editingLine != null) + " station=" + (station != null ? station.displayName : "null"));
 
         if (overUI)
-            return;
-
-        if (_colorPickPanel != null && _colorPickPanel.IsVisible)
             return;
 
         if (_editingLine != null)
@@ -233,7 +235,9 @@ public class LineDrawingInput : MonoBehaviour
                 if (_colorPickPanel == null)
                     TryResolveReferences();
                 if (_colorPickPanel != null)
+                {
                     _colorPickPanel.Show(_selectedA, station, OnColorSelected, OnColorCancel);
+                }
                 else
                     Debug.LogWarning("[连线输入] 场景中未找到 ColorPickPanel，请在 Hierarchy 的 GameCanvas 下添加");
             }
@@ -279,7 +283,7 @@ public class LineDrawingInput : MonoBehaviour
         var cam = Camera.main;
         if (cam == null) return null;
         Vector2 world2D = GetMouseWorld2D(cam);
-        Collider2D[] hits = Physics2D.OverlapCircleAll(world2D, 0.6f);
+        Collider2D[] hits = Physics2D.OverlapCircleAll(world2D, 0.8f);
         if (hits == null || hits.Length == 0) return null;
         foreach (var c in hits)
         {

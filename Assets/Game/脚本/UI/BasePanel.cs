@@ -12,7 +12,15 @@ public abstract class BasePanel : MonoBehaviour
 
     private bool _initialized;
 
-    public bool IsVisible => panelRoot != null && panelRoot.activeSelf;
+    public bool IsVisible
+    {
+        get
+        {
+            if (panelRoot == null)
+                panelRoot = gameObject;
+            return panelRoot.activeSelf;
+        }
+    }
 
     protected virtual void Awake()
     {
@@ -48,6 +56,8 @@ public abstract class BasePanel : MonoBehaviour
     /// <summary>隐藏面板。子类可重写以添加关闭动画。</summary>
     public virtual void Hide()
     {
+        if (panelRoot == null)
+            panelRoot = gameObject;
         if (panelRoot != null)
             panelRoot.SetActive(false);
     }

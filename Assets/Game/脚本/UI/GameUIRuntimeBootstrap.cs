@@ -21,10 +21,10 @@ public class GameUIRuntimeBootstrap : MonoBehaviour
     {
         if (IsLevelScene())
         {
+            CleanupDontDestroyOnLoadGameCanvas();
             EnsureGameCanvasVisibleInLevel();
             BindPauseButton();
             HideNonLevelPopups();
-            CleanupDontDestroyOnLoadGameCanvas();
         }
         else
         {
@@ -38,32 +38,253 @@ public class GameUIRuntimeBootstrap : MonoBehaviour
     private static void EnsureGameCanvasVisibleInLevel()
     {
         var canvases = Object.FindObjectsOfType<Canvas>(true);
+        bool foundGameCanvas = false;
         foreach (var c in canvases)
         {
             if (c != null && c.gameObject.name == "GameCanvas")
-                c.gameObject.SetActive(true);
-        }
-
-        EnsureTimeSpeedPanelInScene();
-    }
-
-    /// <summary>确保场景中的 GameCanvas 下有 TimeSpeedPanel 并显示。</summary>
-    private static void EnsureTimeSpeedPanelInScene()
-    {
-        var activeScene = SceneManager.GetActiveScene();
-        foreach (var root in activeScene.GetRootGameObjects())
-        {
-            if (root.name == "GameCanvas")
             {
-                var panel = root.transform.Find("TimeSpeedPanel");
+                foundGameCanvas = true;
+                c.gameObject.SetActive(true);
+                
+                if (c.GetComponent<GraphicRaycaster>() == null)
+                {
+                    c.gameObject.AddComponent<GraphicRaycaster>();
+                }
+                if (c.GetComponent<UIManager>() == null)
+                {
+                    c.gameObject.AddComponent<UIManager>();
+                }
+
+                var panel = c.transform.Find("TimeSpeedPanel");
                 if (panel == null)
-                    CreateTimeSpeedPanel(root.transform);
+                {
+                    CreateTimeSpeedPanel(c.transform);
+                }
                 else
+                {
+                    var comp = panel.GetComponent<TimeSpeedPanel>();
+                    if (comp != null)
+                    {
+                        UIManager.Register(comp);
+                    }
                     panel.gameObject.SetActive(false);
-                EnsureTimeSpeedToggleButtonExists(root.transform);
-                return;
+                }
+                EnsureTimeSpeedToggleButtonExists(c.transform);
+                EnsureWeekRewardSelectionPopupExists(c.transform);
+                EnsureGameOverPopupExists(c.transform);
             }
         }
+        if (!foundGameCanvas)
+        {
+            Debug.LogWarning($"[GameUIRuntimeBootstrap] EnsureGameCanvasVisibleInLevel: GameCanvas not found");
+        }
+    }
+
+    private static void EnsureWeekRewardSelectionPopupExists(Transform canvas)
+    {
+        if (canvas == null) return;
+
+        var existingPopup = canvas.Find("WeekRewardSelectionPopup");
+        if (existingPopup != null)
+        {
+            var comp = existingPopup.GetComponent<WeekRewardSelectionPopup>();
+            if (comp != null)
+            {
+                UIManager.Register(comp);
+            }
+            existingPopup.gameObject.SetActive(false);
+            return;
+        }
+
+        CreateWeekRewardSelectionPopup(canvas);
+    }
+
+    private static void CreateWeekRewardSelectionPopup(Transform parent)
+    {
+        var popup = new GameObject("WeekRewardSelectionPopup");
+        popup.transform.SetParent(parent, false);
+
+        var r = popup.AddComponent<RectTransform>();
+        r.anchorMin = Vector2.zero;
+        r.anchorMax = Vector2.one;
+        r.offsetMin = Vector2.zero;
+        r.offsetMax = Vector2.zero;
+
+        var bg = popup.AddComponent<UnityEngine.UI.Image>();
+        bg.color = new Color(0.05f, 0.07f, 0.12f, 0.92f);
+
+        var content = new GameObject("Content");
+        content.transform.SetParent(popup.transform, false);
+        var cr = content.AddComponent<RectTransform>();
+        cr.anchorMin = new Vector2(0.5f, 0.5f);
+        cr.anchorMax = new Vector2(0.5f, 0.5f);
+        cr.pivot = new Vector2(0.5f, 0.5f);
+        cr.anchoredPosition = Vector2.zero;
+        cr.sizeDelta = new Vector2(400, 280);
+
+        var yearText = CreateText(content.transform, "YearText", "第 1 年", new Vector2(0, 100), new Vector2(200, 36), 24);
+        yearText.alignment = TextAnchor.MiddleCenter;
+        yearText.fontStyle = FontStyle.Bold;
+
+        var hintText = CreateText(content.transform, "HintText", "选择 1 项奖励", new Vector2(0, 60), new Vector2(200, 24), 18);
+        hintText.alignment = TextAnchor.MiddleCenter;
+
+        var (opt1, icon1) = CreateRewardOption(content.transform, "Option1", new Vector2(-110, -20), new Vector2(160, 140));
+        var (opt2, icon2) = CreateRewardOption(content.transform, "Option2", new Vector2(110, -20), new Vector2(160, 140));
+
+        var comp = popup.AddComponent<WeekRewardSelectionPopup>();
+        comp.yearText = yearText;
+        comp.hintText = hintText;
+        comp.option1Button = opt1;
+        comp.option1Icon = icon1;
+        comp.option2Button = opt2;
+        comp.option2Icon = icon2;
+
+        UIManager.Register(comp);
+        popup.SetActive(false);
+    }
+
+    private static void EnsureGameOverPopupExists(Transform canvas)
+    {
+        if (canvas == null) return;
+
+        var existingPopup = canvas.Find("GameOverPopup");
+        if (existingPopup != null)
+        {
+            var comp = existingPopup.GetComponent<GameOverPopup>();
+            if (comp != null)
+            {
+                UIManager.Register(comp);
+            }
+            existingPopup.gameObject.SetActive(false);
+            return;
+        }
+
+        CreateGameOverPopup(canvas);
+    }
+
+    private static void CreateGameOverPopup(Transform parent)
+    {
+        var popup = new GameObject("GameOverPopup");
+        popup.transform.SetParent(parent, false);
+
+        var r = popup.AddComponent<RectTransform>();
+        r.anchorMin = Vector2.zero;
+        r.anchorMax = Vector2.one;
+        r.offsetMin = Vector2.zero;
+        r.offsetMax = Vector2.zero;
+
+        var bg = popup.AddComponent<UnityEngine.UI.Image>();
+        bg.color = new Color(0.05f, 0.07f, 0.12f, 0.92f);
+
+        var content = new GameObject("Content");
+        content.transform.SetParent(popup.transform, false);
+        var cr = content.AddComponent<RectTransform>();
+        cr.anchorMin = new Vector2(0.5f, 0.5f);
+        cr.anchorMax = new Vector2(0.5f, 0.5f);
+        cr.pivot = new Vector2(0.5f, 0.5f);
+        cr.anchoredPosition = Vector2.zero;
+        cr.sizeDelta = new Vector2(400, 300);
+
+        var titleText = CreateText(content.transform, "TitleText", "调度失败", new Vector2(0, 100), new Vector2(300, 40), 28);
+        titleText.fontStyle = FontStyle.Bold;
+
+        var scoreText = CreateText(content.transform, "ScoreText", "得分: 0", new Vector2(0, 50), new Vector2(200, 30), 20);
+
+        var reasonText = CreateText(content.transform, "ReasonText", "站点拥挤超阈值", new Vector2(0, 10), new Vector2(300, 24), 16);
+
+        var retryBtn = CreateButton(content.transform, "RetryButton", "重试", new Vector2(-80, -60), new Vector2(120, 40));
+        var backBtn = CreateButton(content.transform, "BackButton", "返回", new Vector2(80, -60), new Vector2(120, 40));
+
+        var comp = popup.AddComponent<GameOverPopup>();
+        comp.titleText = titleText;
+        comp.scoreText = scoreText;
+        comp.reasonText = reasonText;
+        comp.retryButton = retryBtn;
+        comp.backButton = backBtn;
+
+        UIManager.Register(comp);
+        popup.SetActive(false);
+    }
+
+    private static Button CreateButton(Transform parent, string name, string text, Vector2 pos, Vector2 size)
+    {
+        var go = new GameObject(name);
+        go.transform.SetParent(parent, false);
+        var r = go.AddComponent<RectTransform>();
+        r.anchorMin = new Vector2(0.5f, 0.5f);
+        r.anchorMax = new Vector2(0.5f, 0.5f);
+        r.pivot = new Vector2(0.5f, 0.5f);
+        r.anchoredPosition = pos;
+        r.sizeDelta = size;
+
+        var img = go.AddComponent<UnityEngine.UI.Image>();
+        img.color = new Color(0.2f, 0.25f, 0.35f, 1f);
+        var btn = go.AddComponent<UnityEngine.UI.Button>();
+
+        var textGo = new GameObject("Text");
+        textGo.transform.SetParent(go.transform, false);
+        var tr = textGo.AddComponent<RectTransform>();
+        tr.anchorMin = Vector2.zero;
+        tr.anchorMax = Vector2.one;
+        tr.offsetMin = Vector2.zero;
+        tr.offsetMax = Vector2.zero;
+        var t = textGo.AddComponent<Text>();
+        t.text = text;
+        t.font = GameUIFonts.Default;
+        t.fontSize = 18;
+        t.alignment = TextAnchor.MiddleCenter;
+        t.color = Color.white;
+
+        return btn;
+    }
+
+    private static Text CreateText(Transform parent, string name, string text, Vector2 pos, Vector2 size, int fontSize)
+    {
+        var go = new GameObject(name);
+        go.transform.SetParent(parent, false);
+        var r = go.AddComponent<RectTransform>();
+        r.anchorMin = new Vector2(0.5f, 0.5f);
+        r.anchorMax = new Vector2(0.5f, 0.5f);
+        r.pivot = new Vector2(0.5f, 0.5f);
+        r.anchoredPosition = pos;
+        r.sizeDelta = size;
+        var t = go.AddComponent<Text>();
+        t.text = text;
+        t.fontSize = fontSize;
+        t.font = GameUIFonts.Default;
+        t.alignment = TextAnchor.MiddleCenter;
+        t.color = Color.white;
+        return t;
+    }
+
+    private static (Button, Image) CreateRewardOption(Transform parent, string name, Vector2 pos, Vector2 size)
+    {
+        var go = new GameObject(name);
+        go.transform.SetParent(parent, false);
+        var r = go.AddComponent<RectTransform>();
+        r.anchorMin = new Vector2(0.5f, 0.5f);
+        r.anchorMax = new Vector2(0.5f, 0.5f);
+        r.pivot = new Vector2(0.5f, 0.5f);
+        r.anchoredPosition = pos;
+        r.sizeDelta = size;
+
+        var img = go.AddComponent<UnityEngine.UI.Image>();
+        img.color = new Color(0.15f, 0.18f, 0.25f, 1f);
+        var btn = go.AddComponent<UnityEngine.UI.Button>();
+        btn.transition = Selectable.Transition.ColorTint;
+
+        var iconGo = new GameObject("Icon");
+        iconGo.transform.SetParent(go.transform, false);
+        var iconR = iconGo.AddComponent<RectTransform>();
+        iconR.anchorMin = Vector2.zero;
+        iconR.anchorMax = Vector2.one;
+        iconR.offsetMin = new Vector2(10, 10);
+        iconR.offsetMax = new Vector2(-10, -10);
+        var icon = iconGo.AddComponent<UnityEngine.UI.Image>();
+        icon.preserveAspect = true;
+
+        return (btn, icon);
     }
 
     /// <summary>进入关卡后销毁 DontDestroyOnLoad 中的冗余 GameCanvas，避免重复的隐藏弹窗占用资源。</summary>
@@ -76,8 +297,12 @@ public class GameUIRuntimeBootstrap : MonoBehaviour
             if (c == null || c.gameObject.name != "GameCanvas") continue;
             if (c.gameObject.scene != activeScene)
             {
+                var uiManager = c.GetComponent<UIManager>();
+                if (uiManager != null && UIManager.Instance == uiManager)
+                {
+                    UIManager.ClearInstance();
+                }
                 Object.Destroy(c.gameObject);
-                Debug.Log("[GameUIRuntimeBootstrap] 已清理 DontDestroyOnLoad 中的冗余 GameCanvas");
             }
         }
     }
@@ -141,7 +366,15 @@ public class GameUIRuntimeBootstrap : MonoBehaviour
 
     private static void EnsureGameCanvas()
     {
-        if (GameObject.Find("GameCanvas") != null) return;
+        var existingCanvas = GameObject.Find("GameCanvas");
+        if (existingCanvas != null)
+        {
+            if (existingCanvas.GetComponent<UIManager>() == null)
+            {
+                existingCanvas.AddComponent<UIManager>();
+            }
+            return;
+        }
 
         var canvas = new GameObject("GameCanvas");
         canvas.AddComponent<Canvas>().renderMode = RenderMode.ScreenSpaceOverlay;
@@ -149,8 +382,8 @@ public class GameUIRuntimeBootstrap : MonoBehaviour
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920, 1080);
         canvas.AddComponent<GraphicRaycaster>();
+        canvas.AddComponent<UIManager>();
         Object.DontDestroyOnLoad(canvas);
-        Debug.Log("[GameUIRuntimeBootstrap] Created GameCanvas");
 
         CreateTimeSpeedPanel(canvas.transform);
     }
@@ -174,6 +407,9 @@ public class GameUIRuntimeBootstrap : MonoBehaviour
         pr.anchoredPosition = new Vector2(-margin, startY);
         pr.sizeDelta = new Vector2(buttonSize, panelHeight);
 
+        var bg = panel.AddComponent<UnityEngine.UI.Image>();
+        bg.color = new Color(0.04f, 0.06f, 0.1f, 0.85f);
+
         var btn0x = CreateSpeedButton(panel.transform, "Speed0x", "⏸", new Vector2(0, -buttonSize * 3 - spacing * 3), new Vector2(buttonSize, buttonSize));
         var btn1x = CreateSpeedButton(panel.transform, "Speed1x", "1x", new Vector2(0, -buttonSize * 2 - spacing * 2), new Vector2(buttonSize, buttonSize));
         var btn1_5x = CreateSpeedButton(panel.transform, "Speed1_5x", "1.5x", new Vector2(0, -buttonSize - spacing), new Vector2(buttonSize, buttonSize));
@@ -186,15 +422,31 @@ public class GameUIRuntimeBootstrap : MonoBehaviour
         comp.speed2xButton = btn2x;
         comp.BindEvents();
 
+        UIManager.Register(comp);
+
         panel.SetActive(false);
         EnsureTimeSpeedToggleButtonExists(parent);
-        Debug.Log("[GameUIRuntimeBootstrap] Created TimeSpeedPanel");
     }
 
     private static void EnsureTimeSpeedToggleButtonExists(Transform canvas)
     {
         if (canvas == null) return;
-        if (canvas.Find("TimeSpeedToggleButton") != null) return;
+
+        var existingBtn = canvas.Find("TimeSpeedToggleButton");
+        if (existingBtn != null)
+        {
+            var toggle = existingBtn.GetComponent<TimeSpeedPanelToggle>();
+            if (toggle == null)
+            {
+                toggle = existingBtn.gameObject.AddComponent<TimeSpeedPanelToggle>();
+            }
+            var btn = existingBtn.GetComponent<Button>();
+            if (btn != null)
+            {
+                toggle.BindButton(btn);
+            }
+            return;
+        }
 
         var go = new GameObject("TimeSpeedToggleButton");
         go.transform.SetParent(canvas, false);
@@ -207,7 +459,7 @@ public class GameUIRuntimeBootstrap : MonoBehaviour
         r.sizeDelta = new Vector2(size, size);
         var img = go.AddComponent<UnityEngine.UI.Image>();
         img.color = new Color(0.35f, 0.4f, 0.5f);
-        go.AddComponent<UnityEngine.UI.Button>();
+        var btn2 = go.AddComponent<UnityEngine.UI.Button>();
         var textGo = new GameObject("Text");
         textGo.transform.SetParent(go.transform, false);
         var tr = textGo.AddComponent<RectTransform>();
@@ -219,7 +471,8 @@ public class GameUIRuntimeBootstrap : MonoBehaviour
         txt.fontSize = 22;
         txt.alignment = TextAnchor.MiddleCenter;
         txt.color = Color.white;
-        go.AddComponent<TimeSpeedPanelToggle>();
+        var toggle2 = go.AddComponent<TimeSpeedPanelToggle>();
+        toggle2.BindButton(btn2);
     }
 
     private static Button CreateSpeedButton(Transform parent, string name, string label, Vector2 pos, Vector2 size)

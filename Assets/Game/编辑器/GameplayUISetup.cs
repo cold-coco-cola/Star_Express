@@ -329,7 +329,7 @@ public static class GameplayUISetup
         var (opt2, icon2) = CreateRewardOptionCard(panel.transform, "Option2", new Vector2(btnSize.x * 0.5f + gap * 0.5f, optY), btnSize);
 
         var comp = panel.AddComponent<WeekRewardSelectionPopup>();
-        comp.weekText = weekT;
+        comp.yearText = weekT;
         comp.hintText = hintT;
         comp.option1Button = opt1;
         comp.option1Icon = icon1;

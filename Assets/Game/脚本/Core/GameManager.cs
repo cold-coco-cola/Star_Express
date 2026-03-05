@@ -8,7 +8,7 @@ using UnityEditor;
 
 /// <summary>
 /// 单例；Start 中加载关卡并注册站点；Update 中按 PRD §7.3 全局时序执行：
-///   1. 周计时 → 资源发放（PRD §4.6：飞船+1, 轮转客舱/星隧）
+///   1. 年计时 → 资源发放（PRD §4.6：飞船+1, 轮转客舱/星隧）
 ///   2. 站点解锁
 ///   3. 各站乘客生成（由 StationBehaviour.Update 独立驱动）
 ///   4. 飞船移动与停靠（由 ShipBehaviour.Update 独立驱动）
@@ -27,7 +27,7 @@ public class GameManager : MonoBehaviour
     [Tooltip("留空则通过 Find 获取 Map/Stations 或 Stations")]
     public Transform stationsParent;
 
-    [Header("周计时（只读）")]
+    [Header("年计时（只读）")]
     [SerializeField] private int currentWeek;
     [SerializeField] private float weekTimer;
 
@@ -35,9 +35,9 @@ public class GameManager : MonoBehaviour
     [SerializeField] private int score;
     [SerializeField] private bool isGameOver;
 
-    /// <summary>每周资源发放后触发，参数 = (周数, 轮转资源类型)。</summary>
+    /// <summary>每年资源发放后触发，参数 = (年数, 轮转资源类型)。</summary>
     public event Action<int, ResourceType> OnWeekReward;
-    /// <summary>每周到时需玩家选择奖励，参数 = 周数。选择完成后由 ApplyWeekRewardSelection 发放。</summary>
+    /// <summary>每年到时需玩家选择奖励，参数 = 年数。选择完成后由 ApplyWeekRewardSelection 发放。</summary>
     public event Action<int> OnWeekRewardSelectionRequired;
     /// <summary>得分变化时触发，参数 = 当前总分。</summary>
     public event Action<int> OnScoreChanged;
@@ -69,7 +69,7 @@ public class GameManager : MonoBehaviour
     public int Score => score;
     public bool IsGameOver => isGameOver;
     public float WeekDurationSeconds => gameBalance != null ? gameBalance.weekDurationSeconds : 90f;
-    /// <summary>距离下周的剩余秒数。</summary>
+    /// <summary>距离下一年的剩余秒数。</summary>
     public float WeekTimerRemaining => Mathf.Max(0, WeekDurationSeconds - weekTimer);
 
     /// <summary>供乘客生成使用的站点字典（只读）。</summary>
@@ -99,7 +99,7 @@ public class GameManager : MonoBehaviour
         EnsureComponent<StationSpawner>();
         EnsureComponent<GameplayAudio>();
         EnsureComponent<TutorialManager>();
-        // PRD §3.1：周 0 持续 60 秒后首次发放，开局不发放。不在此处添加飞船。
+        // PRD §3.1：年 0 持续 60 秒后首次发放，开局不发放。不在此处添加飞船。
     }
 
     private void EnsureComponent<T>() where T : Component
@@ -203,11 +203,17 @@ public class GameManager : MonoBehaviour
         if (IsPausedByUser) return;
         if (_isTutorialPaused) return;
 
-        // PRD §7.3 步骤 1：周计时 — 始终运行，不依赖关卡是否加载
+        // PRD §7.3 步骤 1：年计时 — 始终运行，不依赖关卡是否加载
         float duration = WeekDurationSeconds;
         weekTimer += Time.deltaTime;
         if (weekTimer >= duration)
         {
+            var colorPickPanel = UIManager.Get<ColorPickPanel>();
+            if (colorPickPanel != null && colorPickPanel.IsVisible)
+            {
+                colorPickPanel.HideAndClearCallbacks();
+            }
+
             currentWeek++;
             weekTimer -= duration;
             _waitingWeekRewardSelection = true;
@@ -262,11 +268,11 @@ public class GameManager : MonoBehaviour
         }
 
         string rotName = rotating == ResourceType.Carriage ? "客舱" : rotating == ResourceType.StarTunnel ? "星隧" : "资源";
-        Debug.Log($"[GameManager] 周{week} 资源发放：飞船+1, {rotName}+1");
+        Debug.Log($"[GameManager] 年{week} 资源发放：飞船+1, {rotName}+1");
         OnWeekReward?.Invoke(week, rotating);
     }
 
-    /// <summary>玩家完成周奖励选择后调用，发放飞船 + 选中的 1 项资源。</summary>
+    /// <summary>玩家完成年奖励选择后调用，发放飞船 + 选中的 1 项资源。</summary>
     public void ApplyWeekRewardSelection(WeekRewardSelectionPopup.RewardOption chosen)
     {
         if (!_waitingWeekRewardSelection) return;
@@ -281,7 +287,7 @@ public class GameManager : MonoBehaviour
         OnWeekReward?.Invoke(_pendingWeekForReward, ResourceType.Ship);
         string optName = chosen == WeekRewardSelectionPopup.RewardOption.Carriage ? "客舱" :
             chosen == WeekRewardSelectionPopup.RewardOption.StarTunnel ? "星隧" : "新线路";
-        Debug.Log($"[GameManager] 周{_pendingWeekForReward} 奖励发放：飞船+1, {optName}+1");
+        Debug.Log($"[GameManager] 年{_pendingWeekForReward} 奖励发放：飞船+1, {optName}+1");
     }
 
     /// <summary>通知新站点已生成，供 StationSpawner 调用。</summary>
@@ -290,7 +296,7 @@ public class GameManager : MonoBehaviour
         OnStationSpawned?.Invoke(station);
     }
 
-    /// <summary>用户暂停/继续。周奖励选择期间不生效。</summary>
+    /// <summary>用户暂停/继续。年奖励选择期间不生效。</summary>
     public void SetUserPaused(bool paused)
     {
         if (_waitingWeekRewardSelection) return;

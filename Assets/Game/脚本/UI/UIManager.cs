@@ -12,6 +12,12 @@ public class UIManager : MonoBehaviour
 {
     public static UIManager Instance { get; private set; }
 
+    public static void ClearInstance()
+    {
+        Instance = null;
+        _panels.Clear();
+    }
+
     private static readonly Dictionary<Type, BasePanel> _panels = new Dictionary<Type, BasePanel>();
 
     [Header("已注册面板（只读）")]
@@ -21,11 +27,19 @@ public class UIManager : MonoBehaviour
     {
         if (Instance != null && Instance != this)
         {
-            Destroy(gameObject);
+            Destroy(this);
             return;
         }
         Instance = this;
         RegisterAllPanelsInScene();
+    }
+
+    private void OnDestroy()
+    {
+        if (Instance == this)
+        {
+            Instance = null;
+        }
     }
 
     /// <summary>注册场景中所有 BasePanel（含未激活的），解决 inactive 面板 Awake 未调用导致未注册的问题。</summary>

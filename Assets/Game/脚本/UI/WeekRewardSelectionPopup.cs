@@ -7,7 +7,7 @@ using UnityEditor;
 #endif
 
 /// <summary>
-/// 每周到时暂停游戏，弹出资源选择界面。
+/// 每年到时暂停游戏，弹出资源选择界面。
 /// 从客舱、星隧、新线路中随机抽取 2 项作为选项，玩家从中选择 1 项作为奖励。
 /// </summary>
 public class WeekRewardSelectionPopup : BasePanel
@@ -15,7 +15,7 @@ public class WeekRewardSelectionPopup : BasePanel
     public enum RewardOption { Carriage, StarTunnel, NewLine }
 
     [Header("绑定")]
-    public Text weekText;
+    public Text yearText;
     public Text hintText;
     public Button option1Button;
     public Image option1Icon;
@@ -97,11 +97,11 @@ public class WeekRewardSelectionPopup : BasePanel
         if (gm != null) gm.ApplyWeekRewardSelection(chosen);
     }
 
-    /// <summary>显示弹窗，传入周数。从三种资源中随机抽 2 项，玩家二选一。</summary>
-    public void ShowForWeek(int week)
+    /// <summary>显示弹窗，传入年数。从三种资源中随机抽 2 项，玩家二选一。</summary>
+    public void ShowForWeek(int year)
     {
         _options = PickTwoRandomOptions();
-        if (weekText != null) weekText.text = $"第 {week} 周";
+        if (yearText != null) yearText.text = $"第 {year} 年";
         if (hintText != null) hintText.text = "选择 1 项奖励";
         SetOptionLabel(0);
         SetOptionLabel(1);
