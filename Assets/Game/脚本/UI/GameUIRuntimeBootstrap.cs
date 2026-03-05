@@ -72,6 +72,7 @@ public class GameUIRuntimeBootstrap : MonoBehaviour
                 EnsureTimeSpeedToggleButtonExists(c.transform);
                 EnsureWeekRewardSelectionPopupExists(c.transform);
                 EnsureGameOverPopupExists(c.transform);
+                EnsureCarriagePlacementPanelExists(c.transform);
             }
         }
         if (!foundGameCanvas)
@@ -205,6 +206,53 @@ public class GameUIRuntimeBootstrap : MonoBehaviour
 
         UIManager.Register(comp);
         popup.SetActive(false);
+    }
+
+    private static void EnsureCarriagePlacementPanelExists(Transform canvas)
+    {
+        if (canvas == null) return;
+
+        var existingPanel = canvas.Find("CarriagePlacementPanel");
+        if (existingPanel != null)
+        {
+            var comp = existingPanel.GetComponent<CarriagePlacementPanel>();
+            if (comp != null)
+            {
+                UIManager.Register(comp);
+            }
+            existingPanel.gameObject.SetActive(false);
+            return;
+        }
+
+        CreateCarriagePlacementPanel(canvas);
+    }
+
+    private static void CreateCarriagePlacementPanel(Transform parent)
+    {
+        var panel = new GameObject("CarriagePlacementPanel");
+        panel.transform.SetParent(parent, false);
+
+        var r = panel.AddComponent<RectTransform>();
+        r.anchorMin = new Vector2(0.5f, 0);
+        r.anchorMax = new Vector2(0.5f, 0);
+        r.pivot = new Vector2(0.5f, 0);
+        r.anchoredPosition = new Vector2(0, 80);
+        r.sizeDelta = new Vector2(400, 60);
+
+        var bg = panel.AddComponent<UnityEngine.UI.Image>();
+        bg.color = new Color(0.08f, 0.1f, 0.15f, 0.9f);
+
+        var hintTxt = CreateText(panel.transform, "HintText", "点击地图上的飞船 → 升级容量 +2\n（按 Esc 取消）", Vector2.zero, new Vector2(380, 50), 16);
+        hintTxt.alignment = TextAnchor.MiddleCenter;
+
+        var cancelBtn = CreateButton(panel.transform, "CancelButton", "取消", new Vector2(160, 0), new Vector2(60, 30));
+
+        var comp = panel.AddComponent<CarriagePlacementPanel>();
+        comp.cancelButton = cancelBtn;
+        comp.hintText = hintTxt;
+
+        UIManager.Register(comp);
+        panel.SetActive(false);
     }
 
     private static Button CreateButton(Transform parent, string name, string text, Vector2 pos, Vector2 size)
