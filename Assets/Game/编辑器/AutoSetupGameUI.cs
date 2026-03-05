@@ -61,7 +61,9 @@ public static class AutoSetupGameUI
         changed |= EnsureGameOverPopup(canvas.transform);
         changed |= GameplayUISetup.AddContinueButtonIfMissing();
         changed |= GameplayUISetup.EnsurePauseButtonUnder(canvas.transform);
+        changed |= GameplayUISetup.EnsureTimeSpeedToggleButtonUnder(canvas.transform);
         changed |= GameplayUISetup.EnsureTimeSpeedPanelUnder(canvas.transform);
+        changed |= RemoveTimeSpeedPanelBackground();
         changed |= EnsureBackgroundCanvas();
 
         if (changed)
@@ -91,6 +93,7 @@ public static class AutoSetupGameUI
         cleaned |= RemoveDuplicateChildren(canvasGo.transform, "GameOverPopup");
         cleaned |= RemoveDuplicateChildren(canvasGo.transform, "PauseMenu");
         cleaned |= RemoveDuplicateChildren(canvasGo.transform, "PauseButton");
+        cleaned |= RemoveDuplicateChildren(canvasGo.transform, "TimeSpeedToggleButton");
         cleaned |= RemoveDuplicateChildren(canvasGo.transform, "TimeSpeedPanel");
         cleaned |= RemoveDuplicateChildren(canvasGo.transform, "EventSystem");
 
@@ -103,6 +106,19 @@ public static class AutoSetupGameUI
         }
 
         return cleaned;
+    }
+
+    /// <summary>移除 TimeSpeedPanel 根节点上的背景 Image，只保留四个速度按钮。</summary>
+    private static bool RemoveTimeSpeedPanelBackground()
+    {
+        var canvas = GameObject.Find("GameCanvas");
+        if (canvas == null) return false;
+        var panel = canvas.transform.Find("TimeSpeedPanel");
+        if (panel == null) return false;
+        var img = panel.GetComponent<Image>();
+        if (img == null) return false;
+        Undo.DestroyObjectImmediate(img);
+        return true;
     }
 
     private static bool RemoveLegacyWeekRewardPopup(Transform parent)
@@ -786,7 +802,7 @@ public static class AutoSetupGameUI
         var bg = panel.AddComponent<Image>();
         bg.color = new Color(0.08f, 0.11f, 0.15f, 0.95f);
 
-        var hint = MakeText(panel.transform, "HintText", "建设线路穿过陨石带时，会自动直接消耗星燧资源哦~", new Vector2(0, 20), new Vector2(260, 44));
+        var hint = MakeText(panel.transform, "HintText", "建设线路穿过陨石带时，会自动直接消耗星隧资源哦~", new Vector2(0, 20), new Vector2(260, 44));
         hint.alignment = TextAnchor.MiddleCenter;
         hint.fontSize = 16;
         var btn = MakeRect(panel.transform, "CloseButton");
