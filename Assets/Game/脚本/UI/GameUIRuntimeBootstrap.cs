@@ -345,12 +345,19 @@ public class GameUIRuntimeBootstrap : MonoBehaviour
         var btn = GameObject.Find("PauseButton");
         if (btn != null) btn.SetActive(false);
         HideTimeSpeedPanel();
+        HideTimeSpeedToggleButton();
     }
 
     private static void HideTimeSpeedPanel()
     {
         var panel = GameObject.Find("TimeSpeedPanel");
         if (panel != null) panel.SetActive(false);
+    }
+
+    private static void HideTimeSpeedToggleButton()
+    {
+        var btn = GameObject.Find("TimeSpeedToggleButton");
+        if (btn != null) btn.SetActive(false);
     }
 
     private static bool IsLevelScene()
@@ -373,6 +380,8 @@ public class GameUIRuntimeBootstrap : MonoBehaviour
             {
                 existingCanvas.AddComponent<UIManager>();
             }
+            HideTimeSpeedPanel();
+            HideTimeSpeedToggleButton();
             return;
         }
 
@@ -384,8 +393,6 @@ public class GameUIRuntimeBootstrap : MonoBehaviour
         canvas.AddComponent<GraphicRaycaster>();
         canvas.AddComponent<UIManager>();
         Object.DontDestroyOnLoad(canvas);
-
-        CreateTimeSpeedPanel(canvas.transform);
     }
 
     private static void CreateTimeSpeedPanel(Transform parent)
