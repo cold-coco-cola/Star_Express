@@ -19,7 +19,7 @@ public class StarTunnelHintPopup : BasePanel
             closeButton.onClick.AddListener(() => { GameplayAudio.Instance?.PlayGeneralClick(); OnClose(); });
         }
         if (hintText != null)
-            hintText.text = "建设线路穿过陨石带时，会自动直接消耗星燧资源哦~";
+            hintText.text = "建设线路穿过陨石带时，会自动直接消耗星隧资源哦~";
     }
 
     private void OnClose()

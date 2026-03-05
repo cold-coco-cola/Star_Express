@@ -14,6 +14,7 @@ public static class GameplayUISetup
     {
         EnsureGameCanvas();
         EnsurePauseButton();
+        EnsureTimeSpeedToggleButton();
         EnsureTimeSpeedPanel();
         EnsurePauseMenu();
         EnsureGameOverPopup();
@@ -602,6 +603,47 @@ public static class GameplayUISetup
         return (btn, iconImg);
     }
 
+    public static void EnsureTimeSpeedToggleButton()
+    {
+        var canvas = EnsureGameCanvas();
+        if (canvas == null) return;
+        if (EnsureTimeSpeedToggleButtonUnder(canvas.transform))
+        {
+            Selection.activeGameObject = GameObject.Find("TimeSpeedToggleButton");
+            Debug.Log("[GameplayUISetup] Created TimeSpeedToggleButton");
+        }
+    }
+
+    /// <summary>在 PauseButton 左侧创建“时间速度面板”切换按钮，若已存在则跳过。</summary>
+    public static bool EnsureTimeSpeedToggleButtonUnder(Transform parent)
+    {
+        if (parent.Find("TimeSpeedToggleButton") != null) return false;
+
+        const float size = 48f;
+        const float margin = 8f;
+        const float pauseButtonSize = 64f;
+        const float gap = 8f;
+        float x = -margin - pauseButtonSize - gap - size * 0.5f;
+        float y = -margin - pauseButtonSize * 0.5f;
+
+        var btn = CreateButton(parent, "TimeSpeedToggleButton", "⏱", new Vector2(x, y), new Vector2(size, size), new Color(0.35f, 0.4f, 0.5f));
+        Undo.RegisterCreatedObjectUndo(btn.gameObject, "Create TimeSpeed Toggle Button");
+        var r = btn.GetComponent<RectTransform>();
+        r.anchorMin = new Vector2(1, 1);
+        r.anchorMax = new Vector2(1, 1);
+        r.pivot = new Vector2(0.5f, 0.5f);
+        r.anchoredPosition = new Vector2(x, y);
+        r.sizeDelta = new Vector2(size, size);
+        if (btn.GetComponentInChildren<Text>(true) != null)
+            btn.GetComponentInChildren<Text>(true).fontSize = 22;
+
+        btn.gameObject.AddComponent<GameplayButtonHoverSound>();
+        btn.gameObject.AddComponent<ButtonClickAnim>();
+        btn.gameObject.AddComponent<TimeSpeedPanelToggle>();
+
+        return true;
+    }
+
     public static void EnsureTimeSpeedPanel()
     {
         var canvas = EnsureGameCanvas();
@@ -639,10 +681,6 @@ public static class GameplayUISetup
         pr.anchoredPosition = new Vector2(-margin, startY);
         pr.sizeDelta = new Vector2(buttonSize, panelHeight);
 
-        var bg = panel.AddComponent<Image>();
-        bg.color = new Color(0.04f, 0.06f, 0.1f, 0.85f);
-        bg.raycastTarget = true;
-
         var btn0x = CreateSpeedButton(panel.transform, "Speed0x", "⏸", new Vector2(0, -buttonSize * 3 - spacing * 3), new Vector2(buttonSize, buttonSize));
         var btn1x = CreateSpeedButton(panel.transform, "Speed1x", "1x", new Vector2(0, -buttonSize * 2 - spacing * 2), new Vector2(buttonSize, buttonSize));
         var btn1_5x = CreateSpeedButton(panel.transform, "Speed1_5x", "1.5x", new Vector2(0, -buttonSize - spacing), new Vector2(buttonSize, buttonSize));
@@ -661,6 +699,7 @@ public static class GameplayUISetup
         btn1_5x.gameObject.AddComponent<GameplayButtonHoverSound>();
         btn2x.gameObject.AddComponent<GameplayButtonHoverSound>();
 
+        panel.SetActive(false);
         return true;
     }
 
@@ -678,8 +717,9 @@ public static class GameplayUISetup
         r.sizeDelta = size;
 
         var img = go.AddComponent<Image>();
-        img.color = new Color(0.35f, 0.4f, 0.5f, 0.9f);
+        img.color = new Color(0.7f, 0.75f, 0.85f, 1f);
         var btn = go.AddComponent<Button>();
+        btn.transition = Selectable.Transition.None;
 
         var textGo = new GameObject("Text");
         textGo.transform.SetParent(go.transform, false);

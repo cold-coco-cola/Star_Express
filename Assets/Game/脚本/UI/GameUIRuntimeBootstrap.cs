@@ -57,13 +57,10 @@ public class GameUIRuntimeBootstrap : MonoBehaviour
             {
                 var panel = root.transform.Find("TimeSpeedPanel");
                 if (panel == null)
-                {
                     CreateTimeSpeedPanel(root.transform);
-                }
                 else
-                {
-                    panel.gameObject.SetActive(true);
-                }
+                    panel.gameObject.SetActive(false);
+                EnsureTimeSpeedToggleButtonExists(root.transform);
                 return;
             }
         }
@@ -177,10 +174,6 @@ public class GameUIRuntimeBootstrap : MonoBehaviour
         pr.anchoredPosition = new Vector2(-margin, startY);
         pr.sizeDelta = new Vector2(buttonSize, panelHeight);
 
-        var bg = panel.AddComponent<Image>();
-        bg.color = new Color(0.04f, 0.06f, 0.1f, 0.85f);
-        bg.raycastTarget = true;
-
         var btn0x = CreateSpeedButton(panel.transform, "Speed0x", "⏸", new Vector2(0, -buttonSize * 3 - spacing * 3), new Vector2(buttonSize, buttonSize));
         var btn1x = CreateSpeedButton(panel.transform, "Speed1x", "1x", new Vector2(0, -buttonSize * 2 - spacing * 2), new Vector2(buttonSize, buttonSize));
         var btn1_5x = CreateSpeedButton(panel.transform, "Speed1_5x", "1.5x", new Vector2(0, -buttonSize - spacing), new Vector2(buttonSize, buttonSize));
@@ -193,7 +186,40 @@ public class GameUIRuntimeBootstrap : MonoBehaviour
         comp.speed2xButton = btn2x;
         comp.BindEvents();
 
+        panel.SetActive(false);
+        EnsureTimeSpeedToggleButtonExists(parent);
         Debug.Log("[GameUIRuntimeBootstrap] Created TimeSpeedPanel");
+    }
+
+    private static void EnsureTimeSpeedToggleButtonExists(Transform canvas)
+    {
+        if (canvas == null) return;
+        if (canvas.Find("TimeSpeedToggleButton") != null) return;
+
+        var go = new GameObject("TimeSpeedToggleButton");
+        go.transform.SetParent(canvas, false);
+        var r = go.AddComponent<RectTransform>();
+        r.anchorMin = new Vector2(1, 1);
+        r.anchorMax = new Vector2(1, 1);
+        r.pivot = new Vector2(0.5f, 0.5f);
+        const float size = 48f, margin = 8f, pauseButtonSize = 64f, gap = 8f;
+        r.anchoredPosition = new Vector2(-margin - pauseButtonSize - gap - size * 0.5f, -margin - pauseButtonSize * 0.5f);
+        r.sizeDelta = new Vector2(size, size);
+        var img = go.AddComponent<UnityEngine.UI.Image>();
+        img.color = new Color(0.35f, 0.4f, 0.5f);
+        go.AddComponent<UnityEngine.UI.Button>();
+        var textGo = new GameObject("Text");
+        textGo.transform.SetParent(go.transform, false);
+        var tr = textGo.AddComponent<RectTransform>();
+        tr.anchorMin = Vector2.zero;
+        tr.anchorMax = Vector2.one;
+        tr.offsetMin = tr.offsetMax = Vector2.zero;
+        var txt = textGo.AddComponent<UnityEngine.UI.Text>();
+        txt.text = "⏱";
+        txt.fontSize = 22;
+        txt.alignment = TextAnchor.MiddleCenter;
+        txt.color = Color.white;
+        go.AddComponent<TimeSpeedPanelToggle>();
     }
 
     private static Button CreateSpeedButton(Transform parent, string name, string label, Vector2 pos, Vector2 size)
@@ -209,8 +235,9 @@ public class GameUIRuntimeBootstrap : MonoBehaviour
         r.sizeDelta = size;
 
         var img = go.AddComponent<Image>();
-        img.color = new Color(0.35f, 0.4f, 0.5f, 0.9f);
+        img.color = new Color(0.7f, 0.75f, 0.85f, 1f);
         var btn = go.AddComponent<Button>();
+        btn.transition = Selectable.Transition.None;
 
         var textGo = new GameObject("Text");
         textGo.transform.SetParent(go.transform, false);

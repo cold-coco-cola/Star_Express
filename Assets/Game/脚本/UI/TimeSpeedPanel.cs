@@ -16,9 +16,9 @@ public class TimeSpeedPanel : BasePanel
     private float _currentSpeed = 1f;
     private bool _eventsBound;
 
-    private static readonly Color NormalColor = new Color(0.35f, 0.4f, 0.5f, 0.9f);
-    private static readonly Color SelectedColor = new Color(0.4f, 0.7f, 0.5f, 1f);
-    private static readonly Color PauseColor = new Color(0.6f, 0.4f, 0.4f, 1f);
+    private static readonly Color NormalColor = new Color(0.7f, 0.75f, 0.85f, 1f);
+    private static readonly Color SelectedColor = new Color(0.5f, 0.9f, 0.6f, 1f);
+    private static readonly Color PauseColor = new Color(0.9f, 0.55f, 0.55f, 1f);
 
     private void Start()
     {
@@ -28,6 +28,11 @@ public class TimeSpeedPanel : BasePanel
     public void BindEvents()
     {
         if (_eventsBound) return;
+
+        SetTransitionNone(speed0xButton);
+        SetTransitionNone(speed1xButton);
+        SetTransitionNone(speed1_5xButton);
+        SetTransitionNone(speed2xButton);
 
         if (speed0xButton != null)
             speed0xButton.onClick.AddListener(() => SetSpeed(0f));
@@ -62,6 +67,11 @@ public class TimeSpeedPanel : BasePanel
         SetButtonState(speed1xButton, Mathf.Approximately(_currentSpeed, 1f), false);
         SetButtonState(speed1_5xButton, Mathf.Approximately(_currentSpeed, 1.5f), false);
         SetButtonState(speed2xButton, Mathf.Approximately(_currentSpeed, 2f), false);
+    }
+
+    private static void SetTransitionNone(Button btn)
+    {
+        if (btn != null) btn.transition = Selectable.Transition.None;
     }
 
     private void SetButtonState(Button btn, bool selected, bool isPause)
