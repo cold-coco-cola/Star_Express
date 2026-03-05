@@ -16,9 +16,10 @@ public class ShipBehaviour : MonoBehaviour
     public Line line;
 
     [Header("载客")]
-    public int capacity = 4;
+    public int baseCapacity = 4;
     public int carriageUpgradeCount;
     public List<Passenger> passengers = new List<Passenger>();
+    public List<CarriageBehaviour> carriages = new List<CarriageBehaviour>();
 
     [Header("运行时状态")]
     public int currentSegmentIndex;
@@ -26,6 +27,19 @@ public class ShipBehaviour : MonoBehaviour
     public float progressOnSegment;
     public ShipState state = ShipState.Moving;
     public float dockRemainingTime;
+
+    public int TotalCapacity
+    {
+        get
+        {
+            int total = baseCapacity;
+            foreach (var c in carriages)
+            {
+                if (c != null) total += c.capacity;
+            }
+            return total;
+        }
+    }
 
     private float _speed;
     private float _dockDuration;
@@ -60,12 +74,13 @@ public class ShipBehaviour : MonoBehaviour
         var balance = GameManager.Instance != null ? GameManager.Instance.gameBalance : null;
         _speed = balance != null ? balance.shipSpeedUnitsPerSecond : 1.5f;
         _dockDuration = balance != null ? balance.dockDurationSeconds : 1f;
-        if (capacity <= 0)
+        if (baseCapacity <= 0)
         {
-            capacity = balance != null ? balance.shipCapacity : 4;
+            baseCapacity = balance != null ? balance.shipCapacity : 4;
         }
         EnsureClickCollider();
         ApplyVisual();
+        EnsureCarriages();
     }
 
     /// <summary>确保有 Collider2D，供放置客舱时点击检测。</summary>
@@ -96,8 +111,7 @@ public class ShipBehaviour : MonoBehaviour
 
     private void ResetScale()
     {
-        float scaleByCapacity = 1f + (capacity - 4) * 0.08f;
-        transform.localScale = new Vector3(1f * scaleByCapacity, 0.5f * scaleByCapacity, 1f);
+        transform.localScale = new Vector3(1f, 0.5f, 1f);
     }
 
     private bool IsInPlacementMode()
@@ -115,11 +129,10 @@ public class ShipBehaviour : MonoBehaviour
 
     private void ApplyHoverScale()
     {
-        float scaleByCapacity = 1f + (capacity - 4) * 0.08f;
         float hoverScale = _highlighted 
             ? Mathf.Lerp(1f, _hoverScale, _hoverScaleProgress) 
             : Mathf.Lerp(_hoverScale, 1f, _hoverScaleProgress);
-        transform.localScale = new Vector3(1f * scaleByCapacity * hoverScale, 0.5f * scaleByCapacity * hoverScale, 1f);
+        transform.localScale = new Vector3(1f * hoverScale, 0.5f * hoverScale, 1f);
     }
 
     /// <summary>升级成功时播放放大回弹+摇晃动画。</summary>
@@ -164,50 +177,122 @@ public class ShipBehaviour : MonoBehaviour
             ApplyShipVisualToRenderer(sr, shipColor, shipSprite, runtimeMat);
         }
 
-        float scaleByCapacity = 1f + (capacity - 4) * 0.08f;
         if (_upgradeAnimProgress >= 1f && !_highlighted)
         {
-            transform.localScale = new Vector3(1f * scaleByCapacity, 0.5f * scaleByCapacity, 1f);
+            transform.localScale = new Vector3(1f, 0.5f, 1f);
         }
 
-        EnsureCarriageIndicators();
+        EnsureCarriages();
         RefreshPassengerPositionsOnShip();
         if (_highlighted) ApplyHighlight();
     }
 
-    /// <summary>客舱升级视觉：在飞船后方显示小圆点，每个客舱+2 显示 1 个。</summary>
-    private void EnsureCarriageIndicators()
+    /// <summary>确保车厢数量与升级次数匹配。每升级一次添加一节车厢。</summary>
+    public void EnsureCarriages()
     {
-        int extraCarriages = Mathf.Max(0, (capacity - 4) / 2);
-        var container = transform.Find("CarriageIndicators");
-        if (container == null)
+        while (carriages.Count < carriageUpgradeCount)
         {
-            container = new GameObject("CarriageIndicators").transform;
-            container.SetParent(transform, false);
-            container.localPosition = Vector3.zero;
-            container.localRotation = Quaternion.identity;
-            container.localScale = Vector3.one;
+            CreateCarriage(carriages.Count);
         }
-        int existing = container.childCount;
-        for (int i = existing; i < extraCarriages; i++)
+        while (carriages.Count > carriageUpgradeCount)
         {
-            var dot = new GameObject("Carriage_" + i);
-            dot.transform.SetParent(container, false);
-            dot.transform.localPosition = new Vector3(-0.5f - i * 0.25f, -0.15f, -0.02f);
-            dot.transform.localScale = Vector3.one * 0.2f;
-            var sr = dot.AddComponent<SpriteRenderer>();
-            sr.sprite = GetOrCreateCarriageDotSprite();
-            sr.color = new Color(1f, 0.9f, 0.6f, 0.9f);
-            sr.sortingLayerID = GetShipSortingLayerId();
-            sr.sortingOrder = SortingOrderConstants.ShipCarriageIndicator;
+            var last = carriages[carriages.Count - 1];
+            carriages.RemoveAt(carriages.Count - 1);
+            if (last != null && Application.isPlaying)
+                Destroy(last.gameObject);
         }
-        for (int i = container.childCount - 1; i >= extraCarriages; i--)
+    }
+
+    private void CreateCarriage(int index)
+    {
+        var carriageObj = new GameObject("Carriage_" + index);
+        carriageObj.transform.SetParent(null);
+        carriageObj.transform.localScale = new Vector3(1f, 0.5f, 1f);
+
+        var carriage = carriageObj.AddComponent<CarriageBehaviour>();
+        carriage.leadShip = this;
+        carriage.carriageIndex = index;
+        carriage.followDistance = 0.6f;
+
+        var balance = GameManager.Instance != null ? GameManager.Instance.gameBalance : null;
+        carriage.capacity = balance != null ? balance.shipCapacity : 4;
+
+        carriages.Add(carriage);
+    }
+
+    public CarriageBehaviour GetCarriage(int index)
+    {
+        if (index >= 0 && index < carriages.Count)
+            return carriages[index];
+        return null;
+    }
+
+    public int GetTotalCapacity()
+    {
+        return TotalCapacity;
+    }
+
+    public Sprite GetCurrentSprite()
+    {
+        var sr = GetComponent<SpriteRenderer>();
+        return sr != null ? sr.sprite : null;
+    }
+
+    public bool CanAddPassenger()
+    {
+        if (passengers.Count < baseCapacity) return true;
+        foreach (var c in carriages)
         {
-            if (Application.isPlaying)
-                Destroy(container.GetChild(i).gameObject);
-            else
-                DestroyImmediate(container.GetChild(i).gameObject);
+            if (c != null && c.passengers.Count < c.capacity) return true;
         }
+        return false;
+    }
+
+    public void AddPassengerToShipOrCarriage(Passenger p)
+    {
+        if (passengers.Count < baseCapacity)
+        {
+            passengers.Add(p);
+        }
+        else
+        {
+            foreach (var c in carriages)
+            {
+                if (c != null && c.passengers.Count < c.capacity)
+                {
+                    c.passengers.Add(p);
+                    return;
+                }
+            }
+            passengers.Add(p);
+        }
+    }
+
+    public void RemovePassengerFromShipOrCarriage(Passenger p)
+    {
+        if (passengers.Contains(p))
+        {
+            passengers.Remove(p);
+            return;
+        }
+        foreach (var c in carriages)
+        {
+            if (c != null && c.passengers.Contains(p))
+            {
+                c.passengers.Remove(p);
+                return;
+            }
+        }
+    }
+
+    public int GetTotalPassengerCount()
+    {
+        int count = passengers.Count;
+        foreach (var c in carriages)
+        {
+            if (c != null) count += c.passengers.Count;
+        }
+        return count;
     }
 
     /// <summary>船上乘客相对站点乘客等比缩小，不拉伸。抵消飞船 Y 压缩，停靠时向船尾方向偏移。</summary>
@@ -444,8 +529,7 @@ public class ShipBehaviour : MonoBehaviour
 
         float shake = Mathf.Sin(t * Mathf.PI * 8) * _upgradeShakeAmount * (1f - t);
 
-        float scaleByCapacity = 1f + (capacity - 4) * 0.08f;
-        var baseScale = new Vector3(1f, 0.5f, 1f) * scaleByCapacity;
+        var baseScale = new Vector3(1f, 0.5f, 1f);
         transform.localScale = baseScale * scale;
 
         float baseAngle = transform.eulerAngles.z;
@@ -680,7 +764,7 @@ public class ShipBehaviour : MonoBehaviour
         foreach (var p in result.ToUnloadDestination)
         {
             if (p == null) continue;
-            passengers.Remove(p);
+            RemovePassengerFromShipOrCarriage(p);
             p.Arrive();
             if (GameManager.Instance != null)
                 GameManager.Instance.AddScore(1);
@@ -691,7 +775,7 @@ public class ShipBehaviour : MonoBehaviour
         foreach (var p in result.ToTransfer)
         {
             if (p == null) continue;
-            passengers.Remove(p);
+            RemovePassengerFromShipOrCarriage(p);
             p.TransferToStation(station);
         }
 
@@ -699,9 +783,9 @@ public class ShipBehaviour : MonoBehaviour
         foreach (var p in result.ToLoad)
         {
             if (p == null) continue;
-            if (passengers.Count >= capacity) break;
+            if (!CanAddPassenger()) break;
             if (!station.waitingPassengers.Remove(p)) continue;
-            passengers.Add(p);
+            AddPassengerToShipOrCarriage(p);
             p.BoardShip(this);
         }
 

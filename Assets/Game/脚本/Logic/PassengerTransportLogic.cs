@@ -62,11 +62,11 @@ public static class PassengerTransportLogic
         }
 
         // 3. 载客：仅载目标在前进方向的乘客，避免反向运输
-        if (allLines != null && allLines.Count > 0 && ship.passengers.Count < ship.capacity)
+        if (allLines != null && allLines.Count > 0 && ship.passengers.Count < ship.TotalCapacity)
         {
             var waiting = station.waitingPassengers;
             int onboardAfterUnload = ship.passengers.Count - result.ToUnloadDestination.Count - result.ToTransfer.Count;
-            for (int i = 0; i < waiting.Count && result.ToLoad.Count + onboardAfterUnload < ship.capacity; i++)
+            for (int i = 0; i < waiting.Count && result.ToLoad.Count + onboardAfterUnload < ship.TotalCapacity; i++)
             {
                 var p = waiting[i];
                 if (p == null) continue;

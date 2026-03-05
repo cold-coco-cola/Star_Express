@@ -187,6 +187,9 @@ public class LineDrawingInput : MonoBehaviour
         if (overUI)
             return;
 
+        if (_colorPickPanel != null && _colorPickPanel.IsVisible)
+            return;
+
         if (_editingLine != null)
         {
             if (station != null && station.isUnlocked && !_editingLine.ContainsStation(station))

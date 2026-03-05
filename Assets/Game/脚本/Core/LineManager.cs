@@ -731,15 +731,14 @@ public class LineManager : MonoBehaviour, ILineManager
     public void AddCarriageStock(int amount) { _carriageStock += amount; }
     public void AddStarTunnelStock(int amount) { _starTunnelStock += amount; }
 
-    /// <summary>消耗一个客舱，升级指定飞船容量。成功返回 true。</summary>
+    /// <summary>消耗一个客舱，为指定飞船添加一节车厢。成功返回 true。</summary>
     public bool TryUseCarriage(ShipBehaviour ship)
     {
         if (_carriageStock <= 0 || ship == null) return false;
-        var balance = GameManager.Instance != null ? GameManager.Instance.gameBalance : null;
-        int increment = balance != null ? balance.carriageCapacityIncrement : 2;
-        ship.capacity += increment;
         ship.carriageUpgradeCount++;
+        ship.EnsureCarriages();
         _carriageStock--;
+        ship.PlayUpgradeAnimation();
         return true;
     }
 
