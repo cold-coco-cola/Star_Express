@@ -10,11 +10,9 @@ public class StationSpawner : MonoBehaviour
 {
     private int GetSpawnCount(int week)
     {
-        if (week == 0) return 2;
-        if (week == 1) return 2;
         if (week <= 3) return 2;
         if (week <= 6) return Random.value < 0.4f ? 2 : 3;
-        return Random.value < 0.3f ? 3 : 4; // 第7周起倾向3~4个，扩张更快
+        return Random.value < 0.3f ? 3 : 4;
     }
 
     private const float SpawnWindowStart = 0.2f;

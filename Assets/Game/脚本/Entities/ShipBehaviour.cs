@@ -227,11 +227,6 @@ public class ShipBehaviour : MonoBehaviour
         return null;
     }
 
-    public int GetTotalCapacity()
-    {
-        return TotalCapacity;
-    }
-
     public Sprite GetCurrentSprite()
     {
         var sr = GetComponent<SpriteRenderer>();
@@ -335,7 +330,7 @@ public class ShipBehaviour : MonoBehaviour
                 float iconScale = Passenger.GetShipPassengerIconScale(iconSr.sprite, p.targetShape);
                 iconSr.transform.localScale = Vector3.one * iconScale;
                 if (iconSr.sprite == null)
-                    iconSr.sprite = Passenger.GetPlaceholderShapeSpriteForShip();
+                    iconSr.sprite = Passenger.GetPlaceholderShapeSprite();
                 iconSr.color = new Color(0.85f, 0.85f, 0.95f, 0.5f);
             }
         }
@@ -374,7 +369,7 @@ public class ShipBehaviour : MonoBehaviour
                     float iconScale = Passenger.GetShipPassengerIconScale(iconSr.sprite, p.targetShape) * 0.5f;
                     iconSr.transform.localScale = Vector3.one * iconScale;
                     if (iconSr.sprite == null)
-                        iconSr.sprite = Passenger.GetPlaceholderShapeSpriteForShip();
+                        iconSr.sprite = Passenger.GetPlaceholderShapeSprite();
                     iconSr.color = new Color(0.85f, 0.85f, 0.95f, 0.5f);
                 }
             }

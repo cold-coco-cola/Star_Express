@@ -36,7 +36,6 @@ public class LevelBackgroundMusic : MonoBehaviour
         {
             var clip1 = Resources.Load<AudioClip>("音乐/启程");
             var clip2 = Resources.Load<AudioClip>("音乐/新星");
-            Debug.Log($"[LevelBackgroundMusic] 加载音乐: 启程={clip1 != null}, 新星={clip2 != null}");
             if (clip1 != null && clip2 != null)
             {
                 musicClips = new AudioClip[] { clip1, clip2 };
@@ -48,7 +47,6 @@ public class LevelBackgroundMusic : MonoBehaviour
             }
         }
 
-        Debug.Log($"[LevelBackgroundMusic] 开始播放，音乐数量: {musicClips.Length}, 当前索引: {_currentIndex}, 音量: {volume}");
         PlayCurrentClip();
     }
 
@@ -63,27 +61,13 @@ public class LevelBackgroundMusic : MonoBehaviour
 
     private void PlayCurrentClip()
     {
-        if (musicClips == null || musicClips.Length == 0)
-        {
-            Debug.LogWarning("[LevelBackgroundMusic] PlayCurrentClip: musicClips 为空");
-            return;
-        }
-        if (_currentIndex < 0 || _currentIndex >= musicClips.Length)
-        {
-            Debug.LogWarning($"[LevelBackgroundMusic] PlayCurrentClip: 索引越界 {_currentIndex}");
-            return;
-        }
-        if (musicClips[_currentIndex] == null)
-        {
-            Debug.LogWarning($"[LevelBackgroundMusic] PlayCurrentClip: clip[{_currentIndex}] 为 null");
-            return;
-        }
+        if (musicClips == null || musicClips.Length == 0) return;
+        if (_currentIndex < 0 || _currentIndex >= musicClips.Length) return;
+        if (musicClips[_currentIndex] == null) return;
 
-        Debug.Log($"[LevelBackgroundMusic] 播放: {musicClips[_currentIndex].name}, 时长: {musicClips[_currentIndex].length}秒");
         _source.clip = musicClips[_currentIndex];
         _source.volume = volume;
         _source.Play();
-        Debug.Log($"[LevelBackgroundMusic] AudioSource.isPlaying: {_source.isPlaying}, volume: {_source.volume}");
     }
 
     /// <summary>设置音量并持久化。</summary>

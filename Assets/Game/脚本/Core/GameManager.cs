@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 using UnityEngine;
 #if UNITY_EDITOR
 using UnityEditor;
@@ -50,8 +49,6 @@ public class GameManager : MonoBehaviour
     private const string StationPrefabPath = "Assets/Game/预制体/Station.prefab";
     private const string VisualConfigPath = "Assets/Game/配置/VisualConfig.asset";
     private const string GameBalancePath = "Assets/Game/配置/GameBalance.asset";
-
-    private static readonly ResourceType[] RotationTable = { ResourceType.Carriage, ResourceType.StarTunnel };
 
     private Dictionary<string, StationBehaviour> _stationsById = new Dictionary<string, StationBehaviour>();
     private ILineManager _cachedLineManager;
@@ -243,35 +240,6 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// PRD §4.6 资源发放：飞船 +1（固定）+ 轮转资源 ×1。
-    /// 轮转序列：客舱→星隧→客舱→星隧...（首版无 Hub）
-    /// </summary>
-    private void DistributeWeeklyResources(int week)
-    {
-        var lm = GetComponent<LineManager>();
-        if (lm == null) return;
-
-        lm.AddShipStock(1);
-
-        int rotationIndex = (week - 1) % RotationTable.Length;
-        ResourceType rotating = RotationTable[rotationIndex];
-
-        switch (rotating)
-        {
-            case ResourceType.Carriage:
-                lm.AddCarriageStock(1);
-                break;
-            case ResourceType.StarTunnel:
-                lm.AddStarTunnelStock(1);
-                break;
-        }
-
-        string rotName = rotating == ResourceType.Carriage ? "客舱" : rotating == ResourceType.StarTunnel ? "星隧" : "资源";
-        Debug.Log($"[GameManager] 年{week} 资源发放：飞船+1, {rotName}+1");
-        OnWeekReward?.Invoke(week, rotating);
-    }
-
     /// <summary>玩家完成年奖励选择后调用，发放飞船 + 选中的 1 项资源。</summary>
     public void ApplyWeekRewardSelection(WeekRewardSelectionPopup.RewardOption chosen)
     {
@@ -402,6 +370,16 @@ public class GameManager : MonoBehaviour
             visualConfig = AssetDatabase.LoadAssetAtPath<VisualConfig>(VisualConfigPath);
         if (gameBalance == null)
             gameBalance = AssetDatabase.LoadAssetAtPath<GameBalance>(GameBalancePath);
+#else
+        // 构建版本：Inspector 未指定时从 Resources 加载
+        if (levelConfig == null)
+            levelConfig = Resources.Load<LevelConfig>("Config/LevelConfig_SolarSystem_01");
+        if (stationPrefab == null)
+            stationPrefab = Resources.Load<GameObject>("Station");
+        if (visualConfig == null)
+            visualConfig = Resources.Load<VisualConfig>("Config/VisualConfig");
+        if (gameBalance == null)
+            gameBalance = Resources.Load<GameBalance>("Config/GameBalance");
 #endif
     }
 

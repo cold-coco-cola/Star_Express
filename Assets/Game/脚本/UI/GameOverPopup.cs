@@ -41,15 +41,6 @@ public class GameOverPopup : BasePanel
         Show();
     }
 
-    private void RefreshScore()
-    {
-        if (scoreText != null)
-        {
-            var gm = GameManager.Instance;
-            scoreText.text = "得分: " + (gm != null ? gm.Score : 0);
-        }
-    }
-
     private void OnRetry()
     {
         var gm = GameManager.Instance;

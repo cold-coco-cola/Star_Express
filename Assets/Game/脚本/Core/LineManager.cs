@@ -58,6 +58,9 @@ public class LineManager : MonoBehaviour, ILineManager
 #if UNITY_EDITOR
         if (shipPrefab == null)
             shipPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Game/预制体/Ship.prefab");
+#else
+        if (shipPrefab == null)
+            shipPrefab = Resources.Load<GameObject>("Ship");
 #endif
     }
 
@@ -1213,8 +1216,16 @@ public class LineManager : MonoBehaviour, ILineManager
     private static Material GetOrCreateLineMaterial()
     {
         if (_cachedLineMaterial != null) return _cachedLineMaterial;
-        // 优先使用适合 LineRenderer 的 Shader（Sprites/Default 对线段常不显示）
-        string[] shaderNames = { "Unlit/Color", "Legacy Shaders/Particles/Alpha Blended", "Particles/Standard Unlit", "Universal Render Pipeline/Unlit", "Sprites/Default", "Standard" };
+        // 与飞船一致：从 Resources 加载材质（材质引用 Shader，构建时会被包含）
+        var fromRes = Resources.Load<Material>("Materials/LineMaterial");
+        if (fromRes != null && fromRes.shader != null && fromRes.shader.isSupported)
+        {
+            _cachedLineMaterial = new Material(fromRes);
+            _cachedLineMaterial.renderQueue = 2000;
+            return _cachedLineMaterial;
+        }
+        // 回退：Shader.Find
+        string[] shaderNames = { "Star Express/Line Unlit Color", "Unlit/Color", "Legacy Shaders/Particles/Alpha Blended", "Particles/Standard Unlit", "Universal Render Pipeline/Unlit", "Sprites/Default", "Standard" };
         foreach (string name in shaderNames)
         {
             Shader s = Shader.Find(name);

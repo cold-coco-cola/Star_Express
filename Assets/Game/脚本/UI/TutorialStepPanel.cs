@@ -53,11 +53,6 @@ public class TutorialStepPanel : BasePanel
             continueButton.gameObject.SetActive(showContinueButton);
     }
 
-    public override void Hide()
-    {
-        base.Hide();
-    }
-
     private void SetupButton(Button btn, UnityEngine.Events.UnityAction onClick)
     {
         if (btn == null) return;

@@ -84,30 +84,20 @@ public class Passenger : MonoBehaviour
         _iconRenderer.transform.localScale = Vector3.one * iconScale;
     }
 
-    /// <summary>站点乘客相对于站点的缩放比例</summary>
-    public const float StationPassengerRatio = 0.35f;
-    /// <summary>飞船乘客相对于站点的缩放比例</summary>
-    public const float ShipPassengerRatio = 0.35f;
+    public const float PassengerIconRatio = 0.35f;
 
-    /// <summary>获取站点乘客 icon 缩放。以站点大小为基准。</summary>
+    /// <summary>获取乘客 icon 缩放（站点和飞船通用）。以站点大小为基准。</summary>
     public static float GetStationPassengerIconScale(Sprite sprite, ShapeType shapeType = ShapeType.Circle)
     {
-        if (sprite == null) return StationPassengerRatio;
+        if (sprite == null) return PassengerIconRatio;
         var size = sprite.bounds.size;
         float maxExtent = Mathf.Max(size.x, size.y);
         float stationScale = maxExtent > 0.001f ? LevelLoader.StationVisualWorldSize / maxExtent : LevelLoader.StationVisualWorldSize;
-        return stationScale * LevelLoader.GetShapeScaleMultiplier(shapeType) * StationPassengerRatio;
+        return stationScale * LevelLoader.GetShapeScaleMultiplier(shapeType) * PassengerIconRatio;
     }
 
-    /// <summary>获取飞船乘客 icon 缩放。以站点大小为基准。</summary>
     public static float GetShipPassengerIconScale(Sprite sprite, ShapeType shapeType = ShapeType.Circle)
-    {
-        if (sprite == null) return ShipPassengerRatio;
-        var size = sprite.bounds.size;
-        float maxExtent = Mathf.Max(size.x, size.y);
-        float stationScale = maxExtent > 0.001f ? LevelLoader.StationVisualWorldSize / maxExtent : LevelLoader.StationVisualWorldSize;
-        return stationScale * LevelLoader.GetShapeScaleMultiplier(shapeType) * ShipPassengerRatio;
-    }
+        => GetStationPassengerIconScale(sprite, shapeType);
 
     /// <summary>乘客上船。调用方需先从站台 waitingPassengers 移除。</summary>
     public void BoardShip(ShipBehaviour ship)
@@ -150,8 +140,7 @@ public class Passenger : MonoBehaviour
     }
 
     private static Sprite _placeholderShapeSprite;
-    public static Sprite GetPlaceholderShapeSpriteForShip() => GetPlaceholderShapeSprite();
-    private static Sprite GetPlaceholderShapeSprite()
+    public static Sprite GetPlaceholderShapeSprite()
     {
         if (_placeholderShapeSprite != null) return _placeholderShapeSprite;
         var tex = new Texture2D(32, 32);

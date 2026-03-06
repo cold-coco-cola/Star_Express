@@ -247,25 +247,4 @@ public class CarriageBehaviour : MonoBehaviour
         transform.localScale = new Vector3(0.5f, 0.25f, 1f);
     }
 
-    public void SetVisual(Sprite sprite, Color color)
-    {
-        if (_spriteRenderer == null) return;
-        _spriteRenderer.sprite = sprite;
-        _spriteRenderer.color = color;
-    }
-
-    public int GetTotalCapacity()
-    {
-        return capacity;
-    }
-
-    public int GetPassengerCount()
-    {
-        return passengers.Count;
-    }
-
-    public bool HasSpace()
-    {
-        return passengers.Count < capacity;
-    }
 }

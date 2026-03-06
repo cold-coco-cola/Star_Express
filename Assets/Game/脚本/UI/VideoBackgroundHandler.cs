@@ -21,6 +21,10 @@ namespace Game.Scripts.UI
         [Tooltip("勾选后若视频失败会显示测试色块，用于确认 RawImage 是否可见")]
         public bool showDebugColorOnFail = true;
 
+        [Header("衔接")]
+        [Tooltip("首帧就绪后淡入时长，0 则立即显示")]
+        public float fadeInDuration = 0.4f;
+
         private VideoPlayer _videoPlayer;
         private RenderTexture _renderTexture;
         private Texture2D _debugTexture;
@@ -49,7 +53,10 @@ namespace Game.Scripts.UI
             if (videoClip == null)
                 TryLoadDefaultVideo();
             if (videoClip != null)
+            {
+                _rawImage.color = new Color(1f, 1f, 1f, 0f);
                 StartCoroutine(SetupAndPlayCoroutine());
+            }
             else if (showDebugColorOnFail)
                 ShowDebugColor();
         }
@@ -71,8 +78,6 @@ namespace Game.Scripts.UI
                 yield break;
             }
 
-            _rawImage.color = Color.white;
-
             _renderTexture = new RenderTexture(renderWidth, renderHeight, 0, RenderTextureFormat.ARGB32);
             _renderTexture.filterMode = FilterMode.Bilinear;
             _renderTexture.wrapMode = TextureWrapMode.Clamp;
@@ -80,7 +85,7 @@ namespace Game.Scripts.UI
 
             _videoPlayer = gameObject.AddComponent<VideoPlayer>();
             _videoPlayer.playOnAwake = false;
-            _videoPlayer.waitForFirstFrame = false;
+            _videoPlayer.waitForFirstFrame = true;
             _videoPlayer.isLooping = loop;
             _videoPlayer.clip = videoClip;
             _videoPlayer.renderMode = VideoRenderMode.RenderTexture;
@@ -102,13 +107,35 @@ namespace Game.Scripts.UI
 
             _videoPlayer.Play();
 
-            yield return new WaitForSecondsRealtime(1.5f);
+            float timeout = 5f;
+            float waited = 0f;
+            while ((_videoPlayer == null || _videoPlayer.frame <= 0) && waited < timeout)
+            {
+                waited += Time.unscaledDeltaTime;
+                yield return null;
+            }
 
-            if (_videoPlayer != null && !_videoPlayer.isPlaying && showDebugColorOnFail)
+            if (_videoPlayer == null) yield break;
+
+            if (!_videoPlayer.isPlaying && showDebugColorOnFail)
             {
                 Debug.LogWarning("[VideoBackground] 视频未成功播放，显示备用色块。请检查视频编码（建议 H.264）或 Console 错误。");
                 ShowDebugColor();
+                yield break;
             }
+
+            if (fadeInDuration > 0.001f)
+            {
+                float elapsed = 0f;
+                while (elapsed < fadeInDuration && _videoPlayer != null && _videoPlayer.isPlaying)
+                {
+                    elapsed += Time.unscaledDeltaTime;
+                    float a = Mathf.Clamp01(elapsed / fadeInDuration);
+                    _rawImage.color = new Color(1f, 1f, 1f, a);
+                    yield return null;
+                }
+            }
+            _rawImage.color = Color.white;
 
             LightenVideoOverlay();
         }

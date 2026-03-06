@@ -152,15 +152,6 @@ public class ShipPlacementPanel : BasePanel
 
     }
 
-    private static bool PointInRect(RectTransform rect, Vector2 screenPoint)
-    {
-        if (rect == null) return false;
-        var canvas = rect.GetComponentInParent<Canvas>();
-        if (canvas == null) return false;
-        Camera cam = canvas.renderMode == RenderMode.ScreenSpaceCamera ? canvas.worldCamera : null;
-        return RectTransformUtility.RectangleContainsScreenPoint(rect, screenPoint, cam);
-    }
-
     private void OnCirclePointerDown()
     {
         if (fanPanelRoot != null && fanPanelRoot.activeSelf) return;

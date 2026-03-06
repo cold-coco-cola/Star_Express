@@ -64,7 +64,8 @@ public class LineDrawingInput : MonoBehaviour
 
     private void Update()
     {
-        TryResolveReferences();
+        if (lineManager == null || _colorPickPanel == null)
+            TryResolveReferences();
         if (lineManager == null) return;
 
         var cam = Camera.main;
@@ -265,7 +266,7 @@ public class LineDrawingInput : MonoBehaviour
         ClearHighlightAndReset();
     }
 
-    public void ClearHighlightAndReset()
+    private void ClearHighlightAndReset()
     {
         if (_selectedA != null) SetHighlight(_selectedA, false);
         _selectedA = null;

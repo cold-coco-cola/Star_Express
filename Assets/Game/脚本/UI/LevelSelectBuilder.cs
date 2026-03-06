@@ -54,7 +54,9 @@ namespace Game.Scripts.UI
             var go = new GameObject("Background");
             go.transform.SetParent(transform, false);
             var img = go.AddComponent<Image>();
-            img.color = style != null ? style.backgroundColor : new Color(0.05f, 0.05f, 0.1f, 1f);
+            // 透明背景，让场景中的 粒子星空 VideoPlayer（渲染到相机）可见
+            img.color = new Color(0.05f, 0.05f, 0.1f, 0f);
+            img.raycastTarget = false;
             var rt = img.rectTransform;
             rt.anchorMin = Vector2.zero;
             rt.anchorMax = Vector2.one;
@@ -238,6 +240,19 @@ namespace Game.Scripts.UI
         {
             if (transform.childCount == 0)
                 BuildUI();
+            else
+                EnsureBackgroundTransparent();
+        }
+
+        private void EnsureBackgroundTransparent()
+        {
+            var bg = transform.Find("Background");
+            if (bg != null)
+            {
+                var img = bg.GetComponent<Image>();
+                if (img != null && img.color.a > 0.01f)
+                    img.color = new Color(0.05f, 0.05f, 0.1f, 0f);
+            }
         }
     }
 }

@@ -22,7 +22,6 @@ public class ColorPickPanel : BasePanel
     private StationBehaviour _stationB;
     private Action<LineColor> _onSelected;
     private Action _onCancel;
-    private int _frameShown = -1;
     private bool _waitingForMouseRelease;
 
     public StationBehaviour LastStationB => _stationB;
@@ -71,7 +70,6 @@ public class ColorPickPanel : BasePanel
         _stationB = stationB;
         _onSelected = onSelected;
         _onCancel = onCancel;
-        _frameShown = Time.frameCount;
         _waitingForMouseRelease = true;
         RefreshUnlockedVisibility();
         base.Show();

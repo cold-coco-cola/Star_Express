@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.UI;
 
 /// <summary>
 /// 使 Canvas 背景随摄像机移动和缩放而变化，保持填满视野。
