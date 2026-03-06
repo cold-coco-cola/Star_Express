@@ -66,7 +66,7 @@ public class ShipBehaviour : MonoBehaviour
     private static Material _shipMaterial;
     private static readonly int ColorId = Shader.PropertyToID("_Color");
     private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
-    private const float ShipZ = 0f;
+    public const float ShipZ = 0f;
     private static int GetShipSortingLayerId() => SortingOrderConstants.ShipsLayerId;
 
     private void Start()
