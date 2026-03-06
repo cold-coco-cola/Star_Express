@@ -1208,7 +1208,8 @@ public class LineManager : MonoBehaviour, ILineManager
             if (s != null && s.isSupported)
             {
                 _cachedLineMaterial = new Material(s);
-                _cachedLineMaterial.renderQueue = 2000;
+                _cachedLineMaterial.renderQueue = 3000;
+                _cachedLineMaterial.color = Color.white;
                 return _cachedLineMaterial;
             }
         }
@@ -1218,7 +1219,8 @@ public class LineManager : MonoBehaviour, ILineManager
             if (s != null)
             {
                 _cachedLineMaterial = new Material(s);
-                _cachedLineMaterial.renderQueue = 2000;
+                _cachedLineMaterial.renderQueue = 3000;
+                _cachedLineMaterial.color = Color.white;
                 return _cachedLineMaterial;
             }
         }
@@ -1226,7 +1228,8 @@ public class LineManager : MonoBehaviour, ILineManager
         if (fallback != null)
         {
             _cachedLineMaterial = new Material(fallback);
-            _cachedLineMaterial.renderQueue = 2000;
+            _cachedLineMaterial.renderQueue = 3000;
+            _cachedLineMaterial.color = Color.white;
         }
         return _cachedLineMaterial;
     }

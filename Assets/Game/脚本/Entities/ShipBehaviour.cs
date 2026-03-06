@@ -361,8 +361,8 @@ public class ShipBehaviour : MonoBehaviour
                 p.gameObject.SetActive(true);
                 float row = i / 4;
                 float col = i % 4;
-                float x = (col - 1.5f) * 0.25f + 0.05f;
-                float y = - row * 0.45f - 0.35f;
+                float x = (col - 1.5f) * 0.15f;
+                float y = - row * 0.25f - 0.15f;
                 p.transform.localPosition = new Vector3(x, y, -0.05f);
                 p.transform.localScale = new Vector3(1f / carriageScale.x, 1f / carriageScale.y, 1f / carriageScale.z);
                 var iconSr = p.GetComponentInChildren<SpriteRenderer>();
@@ -371,7 +371,7 @@ public class ShipBehaviour : MonoBehaviour
                     iconSr.sortingLayerID = SortingOrderConstants.ShipsLayerId;
                     iconSr.sortingOrder = SortingOrderConstants.Passenger;
                     iconSr.enabled = true;
-                    float iconScale = Passenger.GetShipPassengerIconScale(iconSr.sprite, p.targetShape) * 0.5f;
+                    float iconScale = Passenger.GetShipPassengerIconScale(iconSr.sprite, p.targetShape) * 0.3f;
                     iconSr.transform.localScale = Vector3.one * iconScale;
                     if (iconSr.sprite == null)
                         iconSr.sprite = Passenger.GetPlaceholderShapeSpriteForShip();
