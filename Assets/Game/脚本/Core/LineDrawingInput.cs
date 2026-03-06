@@ -283,7 +283,7 @@ public class LineDrawingInput : MonoBehaviour
         var cam = Camera.main;
         if (cam == null) return null;
         Vector2 world2D = GetMouseWorld2D(cam);
-        Collider2D[] hits = Physics2D.OverlapCircleAll(world2D, 0.8f);
+        Collider2D[] hits = Physics2D.OverlapCircleAll(world2D, 1.2f);
         if (hits == null || hits.Length == 0) return null;
         foreach (var c in hits)
         {
