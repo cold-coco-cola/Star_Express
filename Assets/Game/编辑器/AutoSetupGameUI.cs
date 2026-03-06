@@ -856,7 +856,7 @@ public static class AutoSetupGameUI
 
         var comp = panel.AddComponent<WeekRewardSelectionPopup>();
         var so = new SerializedObject(comp);
-        so.FindProperty("weekText").objectReferenceValue = weekT;
+        so.FindProperty("yearText").objectReferenceValue = weekT;
         so.FindProperty("hintText").objectReferenceValue = hintT;
         so.FindProperty("option1Button").objectReferenceValue = o1;
         so.FindProperty("option1Icon").objectReferenceValue = icon1;
