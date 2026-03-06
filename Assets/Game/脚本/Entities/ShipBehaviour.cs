@@ -339,6 +339,46 @@ public class ShipBehaviour : MonoBehaviour
                 iconSr.color = new Color(0.85f, 0.85f, 0.95f, 0.5f);
             }
         }
+
+        RefreshCarriagePassengerPositions();
+    }
+
+    /// <summary>刷新所有车厢中乘客的位置和视觉。</summary>
+    private void RefreshCarriagePassengerPositions()
+    {
+        foreach (var carriage in carriages)
+        {
+            if (carriage == null || carriage.passengers == null) continue;
+            var carriageScale = carriage.transform.localScale;
+
+            for (int i = 0; i < carriage.passengers.Count; i++)
+            {
+                var p = carriage.passengers[i];
+                if (p == null) continue;
+                if (p.currentShip != this) continue;
+                if (p.transform.parent != carriage.transform)
+                    p.transform.SetParent(carriage.transform, false);
+                p.gameObject.SetActive(true);
+                float row = i / 4;
+                float col = i % 4;
+                float x = (col - 1.5f) * 0.25f + 0.05f;
+                float y = - row * 0.45f - 0.35f;
+                p.transform.localPosition = new Vector3(x, y, -0.05f);
+                p.transform.localScale = new Vector3(1f / carriageScale.x, 1f / carriageScale.y, 1f / carriageScale.z);
+                var iconSr = p.GetComponentInChildren<SpriteRenderer>();
+                if (iconSr != null)
+                {
+                    iconSr.sortingLayerID = SortingOrderConstants.ShipsLayerId;
+                    iconSr.sortingOrder = SortingOrderConstants.Passenger;
+                    iconSr.enabled = true;
+                    float iconScale = Passenger.GetShipPassengerIconScale(iconSr.sprite, p.targetShape) * 0.5f;
+                    iconSr.transform.localScale = Vector3.one * iconScale;
+                    if (iconSr.sprite == null)
+                        iconSr.sprite = Passenger.GetPlaceholderShapeSpriteForShip();
+                    iconSr.color = new Color(0.85f, 0.85f, 0.95f, 0.5f);
+                }
+            }
+        }
     }
 
     private static Color ResolveLineColor(LineColor lineColor)
