@@ -619,13 +619,21 @@ public class LineManager : MonoBehaviour, ILineManager
 
         if (linesRoot == null)
             linesRoot = GameObject.Find("Map")?.transform?.Find("Lines") ?? GameObject.Find("Lines")?.transform;
-        if (linesRoot != null)
+        if (linesRoot == null)
+            linesRoot = transform;
+
+        string childName = "Line_视觉_" + line.id;
+        Transform child = linesRoot.Find(childName);
+        if (child == null)
         {
-            string childName = "Line_视觉_" + line.id;
-            Transform child = linesRoot.Find(childName);
-            if (child != null)
-                Destroy(child.gameObject);
+            var go = GameObject.Find(childName);
+            if (go != null) child = go.transform;
         }
+        if (child != null)
+            Destroy(child.gameObject);
+
+        foreach (var l in _lines)
+            CreateOrUpdateLineRenderer(l);
     }
 
     /// <summary>Sets segment highlight. pulse=true for editing state (continuous scaling), pulse=false for hover (static).</summary>
@@ -933,6 +941,11 @@ public class LineManager : MonoBehaviour, ILineManager
 
         string childName = "Line_视觉_" + line.id;
         Transform child = linesRoot.Find(childName);
+        if (child == null)
+        {
+            var goFind = GameObject.Find(childName);
+            if (goFind != null) child = goFind.transform;
+        }
         GameObject go;
         LineRenderer lr;
         if (child != null)
