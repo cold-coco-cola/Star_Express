@@ -1055,6 +1055,8 @@ public class LineManager : MonoBehaviour, ILineManager
                 newLr.startWidth = newLr.endWidth = 0.1f;
                 newLr.alignment = LineAlignment.View;
                 newLr.material = new Material(GetOrCreateLineMaterial());
+                newLr.sortingLayerID = SortingOrderConstants.ShipsLayerId;
+                newLr.sortingOrder = 2;
                 newLr.numCapVertices = 4;
                 newLr.numCornerVertices = 4;
             }
@@ -1065,6 +1067,8 @@ public class LineManager : MonoBehaviour, ILineManager
                 for (int j = 0; j < runPts.Count; j++)
                     runLr.SetPosition(j, runPts[j]);
                 runLr.startColor = runLr.endColor = c;
+                runLr.sortingLayerID = SortingOrderConstants.ShipsLayerId;
+                runLr.sortingOrder = 2;
                 if (runLr.material != null)
                 {
                     if (runLr.material.HasProperty("_Color")) runLr.material.SetColor("_Color", c);
@@ -1165,19 +1169,21 @@ public class LineManager : MonoBehaviour, ILineManager
             var (start, end) = allDashes[idx];
             Transform segT = idx < dashedRoot.childCount ? dashedRoot.GetChild(idx) : null;
             if (segT == null)
-            {
-                var go = new GameObject("Dash_" + idx);
-                go.transform.SetParent(dashedRoot, false);
-                segT = go.transform;
-                var lr = go.AddComponent<LineRenderer>();
-                lr.useWorldSpace = true;
-                lr.loop = false;
-                lr.startWidth = lr.endWidth = 0.1f;
-                lr.alignment = LineAlignment.View;
-                lr.material = new Material(GetOrCreateLineMaterial());
-                lr.numCapVertices = 2;
-                lr.numCornerVertices = 2;
-            }
+                {
+                    var go = new GameObject("Dash_" + idx);
+                    go.transform.SetParent(dashedRoot, false);
+                    segT = go.transform;
+                    var lr = go.AddComponent<LineRenderer>();
+                    lr.useWorldSpace = true;
+                    lr.loop = false;
+                    lr.startWidth = lr.endWidth = 0.1f;
+                    lr.alignment = LineAlignment.View;
+                    lr.material = new Material(GetOrCreateLineMaterial());
+                    lr.sortingLayerID = SortingOrderConstants.ShipsLayerId;
+                    lr.sortingOrder = 2;
+                    lr.numCapVertices = 2;
+                    lr.numCornerVertices = 2;
+                }
             var segLr = segT.GetComponent<LineRenderer>();
             if (segLr != null)
             {
@@ -1187,6 +1193,8 @@ public class LineManager : MonoBehaviour, ILineManager
                 segLr.SetPosition(0, s);
                 segLr.SetPosition(1, e);
                 segLr.startColor = segLr.endColor = c;
+                segLr.sortingLayerID = SortingOrderConstants.ShipsLayerId;
+                segLr.sortingOrder = 2;
                 if (segLr.material != null)
                 {
                     if (segLr.material.HasProperty("_Color")) segLr.material.SetColor("_Color", c);
