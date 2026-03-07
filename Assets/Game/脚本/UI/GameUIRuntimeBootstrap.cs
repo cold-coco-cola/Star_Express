@@ -45,6 +45,9 @@ public class GameUIRuntimeBootstrap : MonoBehaviour
             {
                 foundGameCanvas = true;
                 c.gameObject.SetActive(true);
+                var rt = c.transform as RectTransform;
+                if (rt != null && rt.localScale.sqrMagnitude < 0.0001f)
+                    rt.localScale = Vector3.one;
                 
                 if (c.GetComponent<GraphicRaycaster>() == null)
                 {
@@ -73,6 +76,7 @@ public class GameUIRuntimeBootstrap : MonoBehaviour
                 EnsureWeekRewardSelectionPopupExists(c.transform);
                 EnsureGameOverPopupExists(c.transform);
                 EnsureCarriagePlacementPanelExists(c.transform);
+                EnsureStarTunnelHintPopupExists(c.transform);
             }
         }
         if (!foundGameCanvas)
@@ -225,6 +229,22 @@ public class GameUIRuntimeBootstrap : MonoBehaviour
         }
 
         CreateCarriagePlacementPanel(canvas);
+    }
+
+    private static void EnsureStarTunnelHintPopupExists(Transform canvas)
+    {
+        if (canvas == null) return;
+
+        var existingPopup = canvas.Find("StarTunnelHintPopup");
+        if (existingPopup != null)
+        {
+            var comp = existingPopup.GetComponent<StarTunnelHintPopup>();
+            if (comp != null)
+            {
+                UIManager.Register(comp);
+            }
+            existingPopup.gameObject.SetActive(false);
+        }
     }
 
     private static void CreateCarriagePlacementPanel(Transform parent)

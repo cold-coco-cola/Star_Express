@@ -473,6 +473,15 @@ public class LineManager : MonoBehaviour, ILineManager
         if (line.segmentStarTunnelCosts != null && line.segmentStarTunnelCosts.Count > 0 && segmentIndex < line.segmentStarTunnelCosts.Count)
             line.segmentStarTunnelCosts.RemoveAt(segmentIndex);
 
+        StationBehaviour removedA = segmentIndex == 0 ? seq[0] : seq[seq.Count - 2];
+        StationBehaviour removedB = segmentIndex == 0 ? seq[1] : seq[seq.Count - 1];
+        var toRefresh = new HashSet<Line>();
+        if (removedA != null && removedB != null)
+        {
+            foreach (var l in GetLinesForSegment(removedA, removedB))
+                toRefresh.Add(l);
+        }
+
         if (segmentIndex == 0)
             seq.RemoveAt(0);
         else
@@ -484,7 +493,8 @@ public class LineManager : MonoBehaviour, ILineManager
         }
         else
         {
-            RefreshAllLinesSharingSegmentsWith(line);
+            foreach (var l in toRefresh)
+                CreateOrUpdateLineRenderer(l);
         }
 
         return true;
@@ -496,6 +506,15 @@ public class LineManager : MonoBehaviour, ILineManager
         var seq = line.stationSequence;
         if (seq == null || seq.Count < 3) return false;
         if (segmentIndex < 0 || segmentIndex >= seq.Count - 1) return false;
+
+        StationBehaviour removedA = seq[segmentIndex];
+        StationBehaviour removedB = seq[segmentIndex + 1];
+        var toRefresh = new HashSet<Line>();
+        if (removedA != null && removedB != null)
+        {
+            foreach (var l in GetLinesForSegment(removedA, removedB))
+                toRefresh.Add(l);
+        }
 
         int costToReturn = 0;
         if (line.segmentStarTunnelCosts != null && segmentIndex < line.segmentStarTunnelCosts.Count)
@@ -562,7 +581,8 @@ public class LineManager : MonoBehaviour, ILineManager
         }
         else
         {
-            RefreshAllLinesSharingSegmentsWith(line);
+            foreach (var l in toRefresh)
+                CreateOrUpdateLineRenderer(l);
         }
 
         return true;

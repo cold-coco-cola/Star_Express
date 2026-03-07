@@ -52,8 +52,7 @@ public class UIManager : MonoBehaviour
             var panels = canvas.GetComponentsInChildren<BasePanel>(true);
             foreach (var p in panels)
             {
-                if (p != null && !_panels.ContainsKey(p.GetType()))
-                    Register(p);
+                if (p != null) Register(p);
             }
         }
     }
