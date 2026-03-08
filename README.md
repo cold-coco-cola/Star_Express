@@ -19,7 +19,8 @@
 - **星隧**: 用来跨越陨石带的星际隧道，游戏左侧的第三种资源数量为目前剩余的星隧资源数量
 
 ### 2.操作介绍
-![alt text](image.png)
+<img width="1108" height="693" alt="image" src="https://github.com/user-attachments/assets/a14464b9-b263-437d-825e-cbb89805a7b2" />
+
 - **建设轨道**: 分别左键单击你想要建设轨道的两个站点，会出现选择轨道颜色的弹窗。选择合适的线路，站点之间会自动生成对应的轨道。
   1. 若规划的线路不合理，或是建设此路线所需要的资源不够，将无法生成路线
   2. 若该轨道跨越了陨石带，将自动消耗一个星隧资源
@@ -37,13 +38,16 @@
 
 ## 游戏界面
 - **开始界面**：
-![alt text](image-1.png)
+<img width="1106" height="692" alt="image" src="https://github.com/user-attachments/assets/9ed41258-05f1-428f-87a9-0a8e5bc541f8" />
+
 - **关卡选择界面**：
-![alt text](image-2.png)
+<img width="1106" height="692" alt="image" src="https://github.com/user-attachments/assets/4ff4562c-3027-4da3-843f-2939c2fd51ff" />
+
 - **故事界面**：
-![alt text](image-3.png)
+<img width="1106" height="692" alt="image" src="https://github.com/user-attachments/assets/9a373c47-f1e0-47c1-a0c1-2b3d3f2942be" />
+
 - **运行界面**：
-![alt text](image-4.png)
+<img width="1108" height="624" alt="image" src="https://github.com/user-attachments/assets/58d40759-7894-4082-9990-0e837ff77dbf" />
 
 ## 敬请期待
 
@@ -57,3 +61,4 @@
 ## 开发环境
 - Unity 2022.3.62f3c1
 - Visual Studio Code
+- Cursor
