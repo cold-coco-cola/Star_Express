@@ -318,7 +318,7 @@ public class ShipBehaviour : MonoBehaviour
             float row = i / 4;
             float col = i % 4;
             float x = (col - 1.5f) * 0.25f + 0.05f;
-            float y = - row * 0.45f - 0.35f;
+            float y = - row * 0.45f - 0.15f;
             p.transform.localPosition = new Vector3(x, y, -0.05f);
             p.transform.localScale = new Vector3(1f / shipScale.x, 1f / shipScale.y, 1f / shipScale.z);
             var iconSr = p.GetComponentInChildren<SpriteRenderer>();
@@ -332,6 +332,8 @@ public class ShipBehaviour : MonoBehaviour
                 if (iconSr.sprite == null)
                     iconSr.sprite = Passenger.GetPlaceholderShapeSprite();
                 iconSr.color = new Color(0.85f, 0.85f, 0.95f, 0.5f);
+                // 修正 Icon 位置：抵消乘客 scale 对 Icon localPosition 的影响
+                iconSr.transform.localPosition = new Vector3(0f, 0.3f * shipScale.y, 0f);
             }
         }
 
@@ -357,7 +359,7 @@ public class ShipBehaviour : MonoBehaviour
                 float row = i / 4;
                 float col = i % 4;
                 float x = (col - 1.5f) * 0.25f + 0.05f;
-                float y = - row * 0.45f - 0.35f;
+                float y = - row * 0.45f - 0.15f;
                 p.transform.localPosition = new Vector3(x, y, -0.05f);
                 p.transform.localScale = new Vector3(1f / carriageScale.x, 1f / carriageScale.y, 1f / carriageScale.z);
                 var iconSr = p.GetComponentInChildren<SpriteRenderer>();
@@ -371,6 +373,8 @@ public class ShipBehaviour : MonoBehaviour
                     if (iconSr.sprite == null)
                         iconSr.sprite = Passenger.GetPlaceholderShapeSprite();
                     iconSr.color = new Color(0.85f, 0.85f, 0.95f, 0.5f);
+                    // 修正 Icon 位置：抵消乘客 scale 对 Icon localPosition 的影响
+                    iconSr.transform.localPosition = new Vector3(0f, 0.3f * carriageScale.y, 0f);
                 }
             }
         }
